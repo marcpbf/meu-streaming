@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Meu Catálogo</title>
+<style>
+body{background:#111;color:#fff;font-family:Arial}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,160px);gap:14px}
+.card{cursor:pointer}
+.card img{width:160px;border-radius:10px}
+.card p{font-size:12px;margin:6px 0 0}
+</style>
+</head>
+<body>
+
+<h2>Meus Filmes</h2>
+<div id="grid" class="grid"></div>
+
+<script>
+fetch("catalogo.json")
+.then(r=>r.json())
+.then(lista=>{
+  lista.forEach(f=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.innerHTML=`
+      <img src="${f.capa}">
+      <p>${f.titulo} (${f.ano})</p>
+    `;
+    d.onclick=()=>location.href="filme.html?id="+f.id;
+    grid.appendChild(d);
+  });
+});
+</script>
+</body>
+</html>
