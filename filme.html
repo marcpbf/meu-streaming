@@ -1,111 +1,73 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="utf-8">
-    <title>Assistir - Meu Streaming</title>
-    <style>
-        body { background:#0f172a; color:#fff; font-family: sans-serif; margin:0; text-align:center; padding:20px; }
-        .container { max-width: 900px; margin: auto; }
-        
-        /* Player Responsivo */
-        .video-wrapper { 
-            position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; 
-            border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .video-wrapper iframe { position: absolute; top:0; left:0; width:100%; height:100%; border:0; }
-
-        .info { text-align: left; margin-top: 20px; background: #1e293b; padding: 25px; border-radius: 12px; }
-        h1 { color: #38bdf8; margin-top: 0; }
-        p { line-height: 1.6; color: #cbd5e1; }
-        
-        .botoes { margin-bottom: 20px; display: flex; gap: 10px; justify-content: flex-start; }
-        button { 
-            padding: 12px 20px; cursor: pointer; border-radius: 8px; border: none; 
-            font-weight: bold; transition: 0.3s; background: #334155; color: white;
-        }
-        button:hover { background: #475569; transform: translateY(-2px); }
-        .btn-fav { background: #eab308; color: #000; }
-    </style>
+<meta charset="utf-8">
+<title>Filme</title>
+<style>
+body { background:#0f172a; color:#fff; font-family:Arial; padding:20px }
+img { max-width:300px; border-radius:12px }
+button {
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  margin-right:10px;
+  cursor:pointer;
+}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div id="carregando"><h2>🎬 Carregando informações...</h2></div>
+<div id="conteudo"></div>
 
-    <div id="player-area" style="display: none;">
-        <div class="botoes">
-            <button onclick="location.href='index.htm'">⬅ Voltar</button>
-            <button class="btn-fav" onclick="toggleFav()">⭐ Favoritar</button>
-        </div>
+<h3>▶ Player interno</h3>
+<video id="player" controls width="900"></video>
 
-        <div class="video-wrapper">
-            <iframe id="player" src="" allowfullscreen></iframe>
-        </div>
-
-        <div class="info">
-            <h1 id="titulo"></h1>
-            <p><strong>Lançamento:</strong> <span id="ano"></span></p>
-            <p><strong>Gêneros:</strong> <span id="generos"></span></p>
-            <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;">
-            <p id="sinopse"></p>
-        </div>
-    </div>
-</div>
+<h3>🎮 Controles</h3>
+<button id="fav">⭐ Favoritar</button>
+<button id="externo">📱 Abrir no VLC / MX</button>
 
 <script>
-let filmeAtual = null;
+const id = new URLSearchParams(location.search).get("id");
 
-async function carregar() {
-    // 1. Pega o ID da URL
-    const idUrl = new URLSearchParams(window.location.search).get("id");
+fetch("catalogo.json")
+.then(r=>r.json())
+.then(lista=>{
+  const f = lista.find(x=>x.id==id);
 
-    try {
-        // 2. Busca o JSON e aguarda a resposta
-        const r = await fetch("catalogo.json");
-        const lista = await r.json();
+  conteudo.innerHTML = `
+    <h1>${f.titulo} (${f.ano})</h1>
+    <img src="${f.capa}">
+    <p><b>Gêneros:</b> ${f.generos.join(", ")}</p>
+    <p><b>Duração:</b> ${f.duracao}</p>
+    <p><b>Nota:</b> ${f.nota}</p>
+    <p>${f.sinopse}</p>
+  `;
 
-        // 3. Busca o filme comparando como string (mais seguro)
-        filmeAtual = lista.find(f => String(f.id) === String(idUrl));
+  player.src = f.link;
 
-        if (filmeAtual) {
-            // 4. Preenche a interface
-            document.title = "Assistindo: " + filmeAtual.titulo;
-            document.getElementById("titulo").innerText = filmeAtual.titulo;
-            document.getElementById("ano").innerText = filmeAtual.ano;
-            document.getElementById("sinopse").innerText = filmeAtual.sinopse;
-            document.getElementById("generos").innerText = filmeAtual.generos.join(", ");
-            document.getElementById("player").src = filmeAtual.link;
+  // Continuar assistindo
+  player.onloadedmetadata = () => {
+    const t = localStorage.getItem("time_"+f.id);
+    if(t) player.currentTime = t;
+  };
 
-            // 5. Mostra o conteúdo
-            document.getElementById("carregando").style.display = "none";
-            document.getElementById("player-area").style.display = "block";
-        } else {
-            document.getElementById("carregando").innerHTML = "<h2>❌ Filme não encontrado!</h2><button onclick='location.href=\"index.htm\"'>Voltar ao Início</button>";
-        }
-    } catch (erro) {
-        console.error(erro);
-        document.getElementById("carregando").innerHTML = "<h2>⚠️ Erro ao carregar catálogo.</h2>";
-    }
-}
+  player.onpause = () => {
+    localStorage.setItem("time_"+f.id, player.currentTime);
+  };
 
-function toggleFav() {
-    if(!filmeAtual) return;
+  // Favoritos
+  fav.onclick = () => {
     let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-    const id = String(filmeAtual.id);
-
-    if (favs.includes(id)) {
-        favs = favs.filter(f => f !== id);
-        alert("Removido dos favoritos!");
-    } else {
-        favs.push(id);
-        alert("Adicionado aos favoritos!");
-    }
+    if(!favs.includes(f.id)) favs.push(f.id);
     localStorage.setItem("favs", JSON.stringify(favs));
-}
+    alert("Adicionado aos favoritos");
+  };
 
-// Inicia o carregamento assim que a página abre
-window.onload = carregar;
+  // Player externo
+  externo.onclick = () => {
+    window.open(f.link, "_blank");
+  };
+});
 </script>
-
 </body>
 </html>
