@@ -1,73 +1,75 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="utf-8">
-<title>Filme</title>
-<style>
-body { background:#0f172a; color:#fff; font-family:Arial; padding:20px }
-img { max-width:300px; border-radius:12px }
-button {
-  padding:10px 16px;
-  border:none;
-  border-radius:8px;
-  margin-right:10px;
-  cursor:pointer;
-}
-</style>
+    <meta charset="utf-8">
+    <title>Assistir</title>
+    <style>
+        body { background:#0f172a; color:#fff; font-family:Arial; margin:0; text-align:center; padding:20px; }
+        iframe { width:90%; max-width:900px; height:500px; border-radius:12px; background:#000; border: 2px solid #334155; }
+        .info { margin: 20px auto; max-width: 900px; text-align: left; }
+        button { padding:10px 20px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; }
+        .btn-fav { background:#eab308; color:#000; margin-right:10px; }
+        .btn-voltar { background:#334155; color:#fff; }
+    </style>
 </head>
 <body>
 
-<div id="conteudo"></div>
+<div id="conteudo">Carregando filme...</div>
 
-<h3>▶ Player interno</h3>
-<video id="player" controls width="900"></video>
+<iframe id="player" allowfullscreen></iframe>
 
-<h3>🎮 Controles</h3>
-<button id="fav">⭐ Favoritar</button>
-<button id="externo">📱 Abrir no VLC / MX</button>
+<div class="info">
+    <button class="btn-fav" onclick="toggleFav()">⭐ Favoritar</button>
+    <button class="btn-voltar" onclick="history.back()">⬅ Voltar</button>
+    <h1 id="titulo"></h1>
+    <p id="detalhes"></p>
+    <p id="sinopse"></p>
+</div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+let filmeAtual = null;
 
-fetch("catalogo.json")
-.then(r=>r.json())
-.then(lista=>{
-  const f = lista.find(x=>x.id==id);
+async function carregar() {
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
 
-  conteudo.innerHTML = `
-    <h1>${f.titulo} (${f.ano})</h1>
-    <img src="${f.capa}">
-    <p><b>Gêneros:</b> ${f.generos.join(", ")}</p>
-    <p><b>Duração:</b> ${f.duracao}</p>
-    <p><b>Nota:</b> ${f.nota}</p>
-    <p>${f.sinopse}</p>
-  `;
+    try {
+        const r = await fetch("catalogo.json");
+        const lista = await r.json();
+        filmeAtual = lista.find(f => f.id == id);
 
-  player.src = f.link;
+        if (!filmeAtual) {
+            document.body.innerHTML = "<h1>Filme não encontrado!</h1><button onclick='history.back()'>Voltar</button>";
+            return;
+        }
 
-  // Continuar assistindo
-  player.onloadedmetadata = () => {
-    const t = localStorage.getItem("time_"+f.id);
-    if(t) player.currentTime = t;
-  };
+        // Preenche os dados
+        document.title = "Assistir: " + filmeAtual.titulo;
+        document.getElementById("titulo").textContent = `${filmeAtual.titulo} (${filmeAtual.ano})`;
+        document.getElementById("sinopse").textContent = filmeAtual.sinopse;
+        document.getElementById("detalhes").textContent = "Gêneros: " + filmeAtual.generos.join(", ");
+        document.getElementById("player").src = filmeAtual.link;
+        document.getElementById("conteudo").style.display = "none";
 
-  player.onpause = () => {
-    localStorage.setItem("time_"+f.id, player.currentTime);
-  };
+    } catch (e) {
+        console.error(e);
+        document.getElementById("conteudo").textContent = "Erro ao carregar filme.";
+    }
+}
 
-  // Favoritos
-  fav.onclick = () => {
+function toggleFav() {
     let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-    if(!favs.includes(f.id)) favs.push(f.id);
+    if (favs.includes(filmeAtual.id)) {
+        favs = favs.filter(id => id !== filmeAtual.id);
+        alert("Removido dos favoritos");
+    } else {
+        favs.push(filmeAtual.id);
+        alert("Adicionado aos favoritos!");
+    }
     localStorage.setItem("favs", JSON.stringify(favs));
-    alert("Adicionado aos favoritos");
-  };
+}
 
-  // Player externo
-  externo.onclick = () => {
-    window.open(f.link, "_blank");
-  };
-});
+carregar();
 </script>
 </body>
 </html>
