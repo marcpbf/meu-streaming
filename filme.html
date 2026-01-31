@@ -2,75 +2,106 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
-    <title>Assistir</title>
+    <title>Assistir - Meu Streaming</title>
     <style>
-        body { background:#0f172a; color:#fff; font-family:Arial; margin:0; text-align:center; padding:20px; }
+        body { background:#0f172a; color:#fff; font-family:Arial, sans-serif; margin:0; text-align:center; padding:20px; }
+        #player-container { margin-top: 20px; }
         iframe { width:90%; max-width:900px; height:500px; border-radius:12px; background:#000; border: 2px solid #334155; }
-        .info { margin: 20px auto; max-width: 900px; text-align: left; }
-        button { padding:10px 20px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; }
+        .info { margin: 20px auto; max-width: 900px; text-align: left; background: #1e293b; padding: 20px; border-radius: 12px; }
+        button { padding:10px 20px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; transition: 0.2s; }
         .btn-fav { background:#eab308; color:#000; margin-right:10px; }
         .btn-voltar { background:#334155; color:#fff; }
+        button:hover { opacity: 0.8; transform: scale(1.05); }
+        h1 { margin-top: 0; color: #38bdf8; }
+        .loading { font-size: 20px; margin-top: 50px; }
     </style>
 </head>
 <body>
 
-<div id="conteudo">Carregando filme...</div>
+<div id="status" class="loading">Buscando filme no catálogo...</div>
 
-<iframe id="player" allowfullscreen></iframe>
+<div id="conteudo-filme" style="display: none;">
+    <div id="player-container">
+        <iframe id="player" src="" allowfullscreen frameborder="0"></iframe>
+    </div>
 
-<div class="info">
-    <button class="btn-fav" onclick="toggleFav()">⭐ Favoritar</button>
-    <button class="btn-voltar" onclick="history.back()">⬅ Voltar</button>
-    <h1 id="titulo"></h1>
-    <p id="detalhes"></p>
-    <p id="sinopse"></p>
+    <div class="info">
+        <h1 id="titulo"></h1>
+        <p><strong>Ano:</strong> <span id="ano"></span></p>
+        <p><strong>Gêneros:</strong> <span id="generos"></span></p>
+        <p><strong>Sinopse:</strong> <br><span id="sinopse"></span></p>
+        <br>
+        <button class="btn-fav" onclick="toggleFav()">⭐ Favoritar / Remover</button>
+        <button class="btn-voltar" onclick="location.href='index.htm'">⬅ Voltar para o Início</button>
+    </div>
 </div>
 
 <script>
 let filmeAtual = null;
 
-async function carregar() {
-    const params = new URLSearchParams(location.search);
-    const id = params.get("id");
+async function carregarFilme() {
+    // 1. Pega o ID da URL (ex: filme.html?id=1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const idBuscado = urlParams.get("id");
+
+    if (!idBuscado) {
+        document.getElementById("status").innerHTML = "ID do filme não encontrado na URL.<br><button onclick='location.href=\"index.htm\"'>Voltar</button>";
+        return;
+    }
 
     try {
-        const r = await fetch("catalogo.json");
-        const lista = await r.json();
-        filmeAtual = lista.find(f => f.id == id);
+        // 2. Busca o catálogo
+        const response = await fetch("catalogo.json");
+        if (!response.ok) throw new Error("Não foi possível carregar o arquivo catalogo.json");
+        
+        const lista = await response.json();
 
-        if (!filmeAtual) {
-            document.body.innerHTML = "<h1>Filme não encontrado!</h1><button onclick='history.back()'>Voltar</button>";
-            return;
+        // 3. Procura o filme (usando == para ignorar se é texto ou número)
+        filmeAtual = lista.find(f => f.id == idBuscado);
+
+        if (filmeAtual) {
+            // 4. Preenche a página
+            document.title = "Assistir: " + filmeAtual.titulo;
+            document.getElementById("titulo").textContent = filmeAtual.titulo;
+            document.getElementById("ano").textContent = filmeAtual.ano;
+            document.getElementById("sinopse").textContent = filmeAtual.sinopse;
+            document.getElementById("generos").textContent = filmeAtual.generos.join(", ");
+            document.getElementById("player").src = filmeAtual.link;
+
+            // exibe o conteúdo e esconde o carregando
+            document.getElementById("status").style.display = "none";
+            document.getElementById("conteudo-filme").style.display = "block";
+        } else {
+            document.getElementById("status").innerHTML = "Filme não encontrado no catálogo!<br><button onclick='location.href=\"index.htm\"'>Voltar</button>";
         }
 
-        // Preenche os dados
-        document.title = "Assistir: " + filmeAtual.titulo;
-        document.getElementById("titulo").textContent = `${filmeAtual.titulo} (${filmeAtual.ano})`;
-        document.getElementById("sinopse").textContent = filmeAtual.sinopse;
-        document.getElementById("detalhes").textContent = "Gêneros: " + filmeAtual.generos.join(", ");
-        document.getElementById("player").src = filmeAtual.link;
-        document.getElementById("conteudo").style.display = "none";
-
-    } catch (e) {
-        console.error(e);
-        document.getElementById("conteudo").textContent = "Erro ao carregar filme.";
+    } catch (erro) {
+        console.error(erro);
+        document.getElementById("status").innerHTML = "Erro ao carregar os dados do filme.<br>Verifique se o arquivo 'catalogo.json' existe.";
     }
 }
 
+// Função de Favoritos
 function toggleFav() {
+    if (!filmeAtual) return;
     let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-    if (favs.includes(filmeAtual.id)) {
-        favs = favs.filter(id => id !== filmeAtual.id);
-        alert("Removido dos favoritos");
+    
+    // Converte tudo para string para evitar erros de comparação
+    const idString = filmeAtual.id.toString();
+    
+    if (favs.includes(idString)) {
+        favs = favs.filter(id => id !== idString);
+        alert("Removido dos favoritos!");
     } else {
-        favs.push(filmeAtual.id);
+        favs.push(idString);
         alert("Adicionado aos favoritos!");
     }
     localStorage.setItem("favs", JSON.stringify(favs));
 }
 
-carregar();
+// Inicia a busca assim que a página abre
+carregarFilme();
 </script>
+
 </body>
 </html>
-
