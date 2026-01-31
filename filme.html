@@ -4,28 +4,71 @@
 <meta charset="utf-8">
 <title>Filme</title>
 <style>
-body{background:#111;color:#fff;font-family:Arial}
-img{max-width:100%;border-radius:12px}
+body { background:#0f172a; color:#fff; font-family:Arial; padding:20px }
+img { max-width:300px; border-radius:12px }
+button {
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  margin-right:10px;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
 
 <div id="conteudo"></div>
+
+<h3>▶ Player interno</h3>
 <video id="player" controls width="900"></video>
 
+<h3>🎮 Controles</h3>
+<button id="fav">⭐ Favoritar</button>
+<button id="externo">📱 Abrir no VLC / MX</button>
+
 <script>
-const id=new URLSearchParams(location.search).get("id");
+const id = new URLSearchParams(location.search).get("id");
+
 fetch("catalogo.json")
 .then(r=>r.json())
 .then(lista=>{
-  const f=lista.find(x=>x.id==id);
-  conteudo.innerHTML=`
+  const f = lista.find(x=>x.id==id);
+
+  conteudo.innerHTML = `
     <h1>${f.titulo} (${f.ano})</h1>
     <img src="${f.capa}">
+    <p><b>Gêneros:</b> ${f.generos.join(", ")}</p>
+    <p><b>Duração:</b> ${f.duracao}</p>
+    <p><b>Nota:</b> ${f.nota}</p>
     <p>${f.sinopse}</p>
   `;
-  player.src=f.link;
+
+  player.src = f.link;
+
+  // Continuar assistindo
+  player.onloadedmetadata = () => {
+    const t = localStorage.getItem("time_"+f.id);
+    if(t) player.currentTime = t;
+  };
+
+  player.onpause = () => {
+    localStorage.setItem("time_"+f.id, player.currentTime);
+  };
+
+  // Favoritos
+  fav.onclick = () => {
+    let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+    if(!favs.includes(f.id)) favs.push(f.id);
+    localStorage.setItem("favs", JSON.stringify(favs));
+    alert("Adicionado aos favoritos");
+  };
+
+  // Player externo
+  externo.onclick = () => {
+    window.open(f.link, "_blank");
+  };
 });
 </script>
 </body>
 </html>
+
