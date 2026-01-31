@@ -1,143 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="utf-8">
-<title>Meu Streaming</title>
-<style>
-body { background:#0f172a; color:#fff; font-family:Arial; margin:0; padding:20px }
-h2 { margin-bottom:10px }
-
-#topbar { display:flex; gap:10px; margin-bottom:20px }
-input, select, button {
-  padding:8px;
-  border-radius:6px;
-  border:none;
-  font-size:14px;
-}
-
-.grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fill,180px);
-  gap:20px;
-}
-
-.card {
-  cursor:pointer;
-  transition:.2s;
-  outline:none;
-}
-.card:hover { transform:scale(1.08) }
-.card:focus {
-  outline:3px solid #38bdf8;
-  transform:scale(1.1);
-}
-
-.card img {
-  width:180px;
-  border-radius:12px;
-  box-shadow:0 10px 25px rgba(0,0,0,.6);
-}
-
-.card p {
-  font-size:13px;
-  margin-top:6px;
-  text-align:center;
-}
-</style>
+    <meta charset="utf-8">
+    <title>Meu Streaming - Início</title>
+    <style>
+        body { background:#0f172a; color:#fff; font-family:Arial, sans-serif; margin:0; padding:20px; overflow-x:hidden; }
+        #topbar { display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap; }
+        input, select, button { padding:10px; border-radius:6px; border:none; font-size:14px; background:#1e293b; color:#fff; outline:none; }
+        input:focus, select:focus, button:focus { background:#334155; box-shadow:0 0 0 2px #38bdf8; }
+        
+        .grid { display:grid; grid-template-columns:repeat(auto-fill, 180px); gap:20px; justify-content:center; }
+        .card { cursor:pointer; transition:.2s; outline:none; position:relative; }
+        .card:hover, .card:focus { transform:scale(1.1); z-index:10; }
+        .card img { width:180px; height:260px; object-fit:cover; border-radius:12px; box-shadow:0 10px 20px rgba(0,0,0,0.5); }
+        .card:focus img { border: 3px solid #38bdf8; }
+        .card p { font-size:13px; margin-top:8px; text-align:center; font-weight:bold; }
+    </style>
 </head>
 <body>
 
 <h2>🎬 Meu Streaming</h2>
 
 <div id="topbar">
-  <input id="busca" placeholder="Buscar filme...">
-  <select id="genero">
-    <option value="">Todos os gêneros</option>
-  </select>
-  <button onclick="mostrarFavoritos()">⭐ Favoritos</button>
-  <button onclick="render(filmes)">📂 Todos</button>
+    <input id="busca" placeholder="Buscar filme..." autocomplete="off">
+    <select id="genero">
+        <option value="">Todos os gêneros</option>
+    </select>
+    <button onclick="mostrarFavoritos()">⭐ Favoritos</button>
+    <button onclick="render(filmes)">📂 Todos</button>
 </div>
 
-<div id="grid" class="grid"></div>
+<div id="grid" class="grid">Carregando catálogo...</div>
 
 <script>
 let filmes = [];
+let filmesFiltrados = [];
 let pos = 0;
 
+// Carregar Dados
 fetch("catalogo.json")
-.then(r=>r.json())
-.then(lista=>{
-  filmes = lista;
-  montarGeneros(lista);
-  render(lista);
-});
+    .then(r => r.json())
+    .then(lista => {
+        filmes = lista;
+        montarGeneros(lista);
+        render(lista);
+    });
 
-function montarGeneros(lista){
-  const generos = new Set();
-  lista.forEach(f => f.generos.forEach(g => generos.add(g)));
-  generos.forEach(g=>{
-    const op = document.createElement("option");
-    op.value = g;
-    op.textContent = g;
-    genero.appendChild(op);
-  });
+function montarGeneros(lista) {
+    const generos = new Set();
+    lista.forEach(f => f.generos?.forEach(g => generos.add(g)));
+    const select = document.getElementById("genero");
+    generos.forEach(g => {
+        const op = new Option(g, g);
+        select.add(op);
+    });
 }
 
-function render(lista){
-  grid.innerHTML="";
-  lista.forEach((f,i)=>{
-    const d=document.createElement("div");
-    d.className="card";
-    d.tabIndex = 0;
-    d.innerHTML=`
-      <img src="${f.capa}">
-      <p>${f.titulo} (${f.ano})</p>
-    `;
-    d.onclick=()=>location.href="filme.html?id="+f.id;
-    grid.appendChild(d);
-  });
-  pos = 0;
-  document.querySelectorAll(".card")[0]?.focus();
+function render(lista) {
+    filmesFiltrados = lista;
+    const grid = document.getElementById("grid");
+    grid.innerHTML = lista.length ? "" : "<p>Nenhum filme encontrado.</p>";
+    
+    lista.forEach((f, i) => {
+        const d = document.createElement("div");
+        d.className = "card";
+        d.tabIndex = 0;
+        d.innerHTML = `<img src="${f.capa}"><p>${f.titulo}</p>`;
+        d.onclick = () => location.href = "filme.html?id=" + f.id;
+        grid.appendChild(d);
+    });
+    pos = 0; // Reseta posição ao renderizar
 }
 
-// Busca + filtro
+// Filtros
+const filtrar = () => {
+    const termo = busca.value.toLowerCase();
+    const gen = genero.value;
+    const res = filmes.filter(f => 
+        f.titulo.toLowerCase().includes(termo) && (gen === "" || f.generos.includes(gen))
+    );
+    render(res);
+};
+
 busca.oninput = filtrar;
 genero.onchange = filtrar;
 
-function filtrar(){
-  const termo = busca.value.toLowerCase();
-  const gen = genero.value;
-
-  const filtrados = filmes.filter(f=>{
-    const okTitulo = f.titulo.toLowerCase().includes(termo);
-    const okGenero = gen=="" || f.generos.includes(gen);
-    return okTitulo && okGenero;
-  });
-
-  render(filtrados);
+function mostrarFavoritos() {
+    const favs = JSON.parse(localStorage.getItem("favs") || "[]");
+    render(filmes.filter(f => favs.includes(f.id)));
 }
 
-// Favoritos
-function mostrarFavoritos(){
-  const favs = JSON.parse(localStorage.getItem("favs") || "[]");
-  const lista = filmes.filter(f => favs.includes(f.id));
-  render(lista);
-}
-
-// Modo TV (setas)
+// CONTROLE REMOTO (MODO TV)
 document.addEventListener("keydown", e => {
-  const cards = document.querySelectorAll(".card");
-  if(!cards.length) return;
+    const cards = document.querySelectorAll(".card");
+    if (!cards.length) return;
 
-  if(e.key === "ArrowRight") pos++;
-  if(e.key === "ArrowLeft") pos--;
-  if(e.key === "ArrowDown") pos += 5;
-  if(e.key === "ArrowUp") pos -= 5;
+    // Calcula colunas dinamicamente para o pulo de linha
+    const colunas = Math.floor(document.getElementById("grid").offsetWidth / 200);
 
-  pos = Math.max(0, Math.min(pos, cards.length-1));
-  cards[pos].focus();
+    if (e.key === "ArrowRight") pos++;
+    else if (e.key === "ArrowLeft") pos--;
+    else if (e.key === "ArrowDown") pos += colunas;
+    else if (e.key === "ArrowUp") pos -= colunas;
+    else if (e.key === "Enter") { cards[pos].click(); return; }
+    else return;
 
-  if(e.key === "Enter") cards[pos].click();
+    pos = Math.max(0, Math.min(pos, cards.length - 1));
+    cards[pos].focus();
+    cards[pos].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    e.preventDefault();
 });
 </script>
 </body>
