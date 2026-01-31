@@ -1,28 +1,31 @@
-const id = new URLSearchParams(location.search).get("id");
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Filme</title>
+<style>
+body{background:#111;color:#fff;font-family:Arial}
+img{max-width:100%;border-radius:12px}
+</style>
+</head>
+<body>
 
+<div id="conteudo"></div>
+<video id="player" controls width="900"></video>
+
+<script>
+const id=new URLSearchParams(location.search).get("id");
 fetch("catalogo.json")
-  .then(r => {
-    if (!r.ok) throw new Error("Erro ao baixar o arquivo JSON");
-    return r.json();
-  })
-  .then(lista => {
-    // Usamos == para garantir que ele ache o ID mesmo se for texto ou número
-    const f = lista.find(x => x.id == id);
-
-    if (f) {
-      document.title = f.titulo; // Muda o nome da aba do navegador
-      conteudo.innerHTML = `
-        <h1>${f.titulo} (${f.ano})</h1>
-        <img src="${f.capa}" style="max-width:300px">
-        <p><strong>Sinopse:</strong> ${f.sinopse}</p>
-      `;
-      player.src = f.link;
-      player.play(); // Tenta dar play automático
-    } else {
-      conteudo.innerHTML = "<h1>❌ Filme não encontrado no catálogo!</h1>";
-    }
-  })
-  .catch(erro => {
-    console.error(erro);
-    conteudo.innerHTML = "<h1>⚠️ Erro ao carregar o catálogo.</h1>";
-  });
+.then(r=>r.json())
+.then(lista=>{
+  const f=lista.find(x=>x.id==id);
+  conteudo.innerHTML=`
+    <h1>${f.titulo} (${f.ano})</h1>
+    <img src="${f.capa}">
+    <p>${f.sinopse}</p>
+  `;
+  player.src=f.link;
+});
+</script>
+</body>
+</html>
