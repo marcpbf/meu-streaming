@@ -29,7 +29,7 @@ button {
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-fetch("catalogo.json")
+fetch("https://marcpbf.github.io/meu-streaming/catalogo.json")
 .then(r=>r.json())
 .then(lista=>{
   const f = lista.find(x=>x.id==id);
@@ -71,3 +71,4 @@ fetch("catalogo.json")
 </script>
 </body>
 </html>
+
