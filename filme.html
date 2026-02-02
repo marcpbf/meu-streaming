@@ -1,53 +1,44 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-black text-white">
-
-<div id="app"></div>
-
 <script>
 const id = new URLSearchParams(location.search).get("id");
+const API_KEY = "9a9a8c6e53bf1e6c407b689e729a43c9";
 
-fetch("catalogo.json")
-.then(r=>r.json())
-.then(lista=>{
-  const f = lista.find(x => x.id == id);
+Promise.all([
+  fetch("catalogo.json").then(r=>r.json()),
+  fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}&language=pt-BR`).then(r=>r.json()),
+  fetch(`https://api.themoviedb.org/3/movie/${id}/credits?api_key=${API_KEY}&language=pt-BR`).then(r=>r.json())
+])
+.then(([lista, filme, creditos]) => {
+  const local = lista.find(x => x.id == id);
 
   app.innerHTML = `
-  <div class="relative h-[60vh] bg-cover bg-center"
-       style="background-image:url('${f.backdrop}')">
-    <div class="absolute inset-0 bg-gradient-to-r from-black"></div>
-  </div>
-
-  <div class="max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
-    <img src="${f.capa}" class="w-60 rounded-xl shadow-2xl">
-
-    <div>
-      <h1 class="text-4xl font-bold">${f.titulo}</h1>
-      <p class="text-gray-400">${f.ano}</p>
-      <p class="mt-4 max-w-xl">${f.sinopse}</p>
-
-      <video class="mt-6 w-full rounded-xl" controls>
-        <source src="${f.link}">
-      </video>
+    <div class="relative h-[60vh] bg-cover bg-center"
+         style="background-image:url('https://image.tmdb.org/t/p/original${filme.backdrop_path}')">
+      <div class="absolute inset-0 bg-gradient-to-r from-black"></div>
     </div>
-  </div>
 
-  <h2 class="text-2xl mt-12 mb-4 ml-10">Elenco</h2>
-  <div class="flex gap-4 overflow-x-auto px-10">
-    ${f.elenco.map(e=>`
-      <div class="w-32 text-center">
-        <img src="${e.foto}" class="rounded-lg">
-        <p class="text-sm mt-2">${e.nome}</p>
+    <div class="max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
+      <img src="https://image.tmdb.org/t/p/w500${filme.poster_path}" class="w-60 rounded-xl shadow-2xl">
+
+      <div>
+        <h1 class="text-4xl font-bold">${filme.title}</h1>
+        <p class="text-gray-400">${filme.release_date.slice(0,4)} • ${filme.runtime} min • ⭐ ${filme.vote_average}</p>
+        <p class="mt-4 max-w-xl">${filme.overview}</p>
+
+        <video class="mt-6 w-full rounded-xl" controls>
+          <source src="${local.link}">
+        </video>
       </div>
-    `).join("")}
-  </div>
+    </div>
+
+    <h2 class="text-2xl mt-12 mb-4 ml-10">Elenco</h2>
+    <div class="flex gap-4 overflow-x-auto px-10">
+      ${creditos.cast.slice(0,10).map(e => `
+        <div class="w-32 text-center">
+          <img src="https://image.tmdb.org/t/p/w185${e.profile_path}" class="rounded-lg">
+          <p class="text-sm mt-2">${e.name}</p>
+        </div>
+      `).join("")}
+    </div>
   `;
 });
 </script>
-</body>
-</html>
