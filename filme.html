@@ -48,23 +48,22 @@
 
         app.innerHTML = `
           <div class="relative h-[60vh] bg-cover bg-center"
-           <div class="absolute inset-0 bg-gradient-to-r from-black"></div>
-               style="background-image:url('${backdrop}')">
-          
-          </div>
+     style="background-image:url('https://image.tmdb.org/t/p/original/7EUM6T7iIxbca9RWKAH06omjAHZ.jpg')">
 
-          <div class="max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
-            <img src="${poster}" class="w-60 rounded-xl shadow-2xl">
+  <!-- camada escura por cima do banner -->
+  <div class="absolute inset-0 bg-black/70"></div>
 
-            <div>
-              <h1 class="text-4xl font-bold">${filme.title || local.titulo}</h1>
-              <p class="text-gray-400">
-                ${filme.release_date ? filme.release_date.slice(0,4) : ""} • 
-                ${filme.runtime || ""} min • 
-                ⭐ ${filme.vote_average || ""}
-              </p>
+</div>
 
-              <p class="mt-4 max-w-xl">${filme.overview || local.sinopse || ""}</p>
+<!-- CONTEÚDO FORA DO BANNER -->
+<div class="relative z-10 max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
+  <img src="POSTER.jpg" class="w-60 rounded-xl shadow-2xl">
+
+  <div>
+    <h1 class="text-4xl font-bold">Título</h1>
+    <p class="mt-4">Aqui vai a sinopse...</p>
+  </div>
+</div>
 
               <video class="mt-6 w-full rounded-xl" controls>
                 <source src="${local.link}">
@@ -94,5 +93,3 @@
 
 </body>
 </html>
-
-
