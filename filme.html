@@ -1,44 +1,95 @@
-<script>
-const id = new URLSearchParams(location.search).get("id");
-const API_KEY = "9a9a8c6e53bf1e6c407b689e729a43c9";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Filme</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
 
-Promise.all([
-  fetch("catalogo.json").then(r=>r.json()),
-  fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}&language=pt-BR`).then(r=>r.json()),
-  fetch(`https://api.themoviedb.org/3/movie/${id}/credits?api_key=${API_KEY}&language=pt-BR`).then(r=>r.json())
-])
-.then(([lista, filme, creditos]) => {
-  const local = lista.find(x => x.id == id);
+<body class="bg-black text-white">
 
-  app.innerHTML = `
-    <div class="relative h-[60vh] bg-cover bg-center"
-         style="background-image:url('https://image.tmdb.org/t/p/original${filme.backdrop_path}')">
-      <div class="absolute inset-0 bg-gradient-to-r from-black"></div>
-    </div>
+  <!-- Container principal -->
+  <div id="app" class="min-h-screen">Carregando...</div>
 
-    <div class="max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
-      <img src="https://image.tmdb.org/t/p/w500${filme.poster_path}" class="w-60 rounded-xl shadow-2xl">
+  <script>
+    const app = document.getElementById("app");
+    const id = new URLSearchParams(location.search).get("id");
 
-      <div>
-        <h1 class="text-4xl font-bold">${filme.title}</h1>
-        <p class="text-gray-400">${filme.release_date.slice(0,4)} • ${filme.runtime} min • ⭐ ${filme.vote_average}</p>
-        <p class="mt-4 max-w-xl">${filme.overview}</p>
+    // SUA CHAVE DO TMDB AQUI
+    const API_KEY = "SUA_CHAVE_TMDB";
 
-        <video class="mt-6 w-full rounded-xl" controls>
-          <source src="${local.link}">
-        </video>
-      </div>
-    </div>
+    if (!id) {
+      app.innerHTML = "<h1 class='p-6'>ID do filme não informado.</h1>";
+    } else {
 
-    <h2 class="text-2xl mt-12 mb-4 ml-10">Elenco</h2>
-    <div class="flex gap-4 overflow-x-auto px-10">
-      ${creditos.cast.slice(0,10).map(e => `
-        <div class="w-32 text-center">
-          <img src="https://image.tmdb.org/t/p/w185${e.profile_path}" class="rounded-lg">
-          <p class="text-sm mt-2">${e.name}</p>
-        </div>
-      `).join("")}
-    </div>
-  `;
-});
-</script>
+      Promise.all([
+        fetch("catalogo.json").then(r => r.json()),
+        fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}&language=pt-BR`).then(r => r.json()),
+        fetch(`https://api.themoviedb.org/3/movie/${id}/credits?api_key=${API_KEY}&language=pt-BR`).then(r => r.json())
+      ])
+      .then(([lista, filme, creditos]) => {
+
+        const local = lista.find(x => x.id == id);
+
+        if (!local) {
+          app.innerHTML = "<h1 class='p-6'>Filme não encontrado no catálogo.</h1>";
+          return;
+        }
+
+        const backdrop = filme.backdrop_path 
+          ? `https://image.tmdb.org/t/p/original${filme.backdrop_path}` 
+          : "";
+
+        const poster = filme.poster_path 
+          ? `https://image.tmdb.org/t/p/w500${filme.poster_path}` 
+          : local.capa;
+
+        const elenco = (creditos.cast || []).slice(0, 10);
+
+        app.innerHTML = `
+          <div class="relative h-[60vh] bg-cover bg-center"
+               style="background-image:url('${backdrop}')">
+            <div class="absolute inset-0 bg-gradient-to-r from-black"></div>
+          </div>
+
+          <div class="max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
+            <img src="${poster}" class="w-60 rounded-xl shadow-2xl">
+
+            <div>
+              <h1 class="text-4xl font-bold">${filme.title || local.titulo}</h1>
+              <p class="text-gray-400">
+                ${filme.release_date ? filme.release_date.slice(0,4) : ""} • 
+                ${filme.runtime || ""} min • 
+                ⭐ ${filme.vote_average || ""}
+              </p>
+
+              <p class="mt-4 max-w-xl">${filme.overview || local.sinopse || ""}</p>
+
+              <video class="mt-6 w-full rounded-xl" controls>
+                <source src="${local.link}">
+              </video>
+            </div>
+          </div>
+
+          <h2 class="text-2xl mt-12 mb-4 ml-10">Elenco</h2>
+          <div class="flex gap-4 overflow-x-auto px-10 pb-10">
+            ${elenco.map(e => `
+              <div class="w-32 text-center">
+                <img 
+                  src="${e.profile_path ? 'https://image.tmdb.org/t/p/w185' + e.profile_path : ''}" 
+                  class="rounded-lg">
+                <p class="text-sm mt-2">${e.name}</p>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      })
+      .catch(err => {
+        console.error(err);
+        app.innerHTML = "<h1 class='p-6'>Erro ao carregar dados.</h1>";
+      });
+    }
+  </script>
+
+</body>
+</html>
