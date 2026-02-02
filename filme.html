@@ -1,4 +1,15 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
 
+<body class="bg-black text-white">
+
+<div id="app"></div>
+
+<script>
 const id = new URLSearchParams(location.search).get("id");
 
 fetch("catalogo.json")
@@ -37,3 +48,6 @@ fetch("catalogo.json")
   </div>
   `;
 });
+</script>
+</body>
+</html>
