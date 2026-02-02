@@ -1,30 +1,52 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<title>Filme</title>
-<style>
-body{background:#111;color:#fff;font-family:Arial}
-img{max-width:100%;border-radius:12px}
-</style>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-<div id="conteudo"></div>
-<video id="player" controls width="900"></video>
+<body class="bg-black text-white">
+
+<div id="app"></div>
 
 <script>
-const id=new URLSearchParams(location.search).get("id");
+const id = new URLSearchParams(location.search).get("id");
+
 fetch("catalogo.json")
 .then(r=>r.json())
 .then(lista=>{
-  const f=lista.find(x=>x.id==id);
-  conteudo.innerHTML=`
-    <h1>${f.titulo} (${f.ano})</h1>
-    <img src="${f.capa}">
-    <p>${f.sinopse}</p>
+  const f = lista.find(x => x.id == id);
+
+  app.innerHTML = `
+  <div class="relative h-[60vh] bg-cover bg-center"
+       style="background-image:url('${f.backdrop}')">
+    <div class="absolute inset-0 bg-gradient-to-r from-black"></div>
+  </div>
+
+  <div class="max-w-6xl mx-auto -mt-40 flex gap-8 p-6">
+    <img src="${f.capa}" class="w-60 rounded-xl shadow-2xl">
+
+    <div>
+      <h1 class="text-4xl font-bold">${f.titulo}</h1>
+      <p class="text-gray-400">${f.ano}</p>
+      <p class="mt-4 max-w-xl">${f.sinopse}</p>
+
+      <video class="mt-6 w-full rounded-xl" controls>
+        <source src="${f.link}">
+      </video>
+    </div>
+  </div>
+
+  <h2 class="text-2xl mt-12 mb-4 ml-10">Elenco</h2>
+  <div class="flex gap-4 overflow-x-auto px-10">
+    ${f.elenco.map(e=>`
+      <div class="w-32 text-center">
+        <img src="${e.foto}" class="rounded-lg">
+        <p class="text-sm mt-2">${e.nome}</p>
+      </div>
+    `).join("")}
+  </div>
   `;
-  player.src=f.link;
 });
 </script>
 </body>
