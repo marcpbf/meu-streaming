@@ -62,7 +62,20 @@ Promise.all([
         <img id="poster" src="${poster}">
         <div>
           <h1>${filme.title || local.titulo}</h1>
-          <p>${filme.overview || local.sinopse || ""}</p>
+<p style="color:#aaa;margin-top:8px">
+  📅 ${filme.release_date?.slice(0,4)} • 
+  ⏱ ${filme.runtime} min • 
+  ⭐ ${filme.vote_average.toFixed(1)} 
+  (${filme.vote_count} votos)
+</p>
+
+<p style="margin-top:10px">
+  🎭 ${filme.genres.map(g=>g.name).join(", ")}
+</p>
+
+<p style="margin-top:15px">
+  ${filme.overview || local.sinopse || ""}
+</p>
         </div>
       </div>
 
