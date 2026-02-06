@@ -2,196 +2,162 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
-    <title>Minha TV Box - Streaming</title>
+    <title>Meu Streaming - TV Mode</title>
     <style>
-        :root { --destaque: #38bdf8; --bg: #070b14; --card-w: 180px; --card-h: 260px; }
-        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', Roboto, Arial; margin: 0; overflow: hidden; }
+        :root { --destaque: #38bdf8; --bg: #070b14; }
+        body { background: var(--bg); color: #fff; font-family: Arial, sans-serif; margin: 0; padding: 0; overflow: hidden; }
         
-        /* Cabeçalho Fixo */
-        header { padding: 20px 50px; background: linear-gradient(to bottom, rgba(7,11,20,1), transparent); display: flex; gap: 20px; align-items: center; }
-        input { background: #1e293b; border: 2px solid transparent; color: #fff; padding: 12px; border-radius: 8px; width: 300px; outline: none; }
-        input:focus { border-color: var(--destaque); }
+        /* Menu Superior */
+        header { padding: 20px 40px; display: flex; gap: 15px; background: rgba(0,0,0,0.5); }
+        input, select { padding: 10px; border-radius: 5px; border: none; background: #1e293b; color: #fff; outline: none; }
+        input:focus { box-shadow: 0 0 0 3px var(--destaque); }
 
-        /* Container de Fileiras */
-        #conteudo { height: calc(100vh - 100px); overflow-y: hidden; padding-bottom: 50px; }
-        .fileira-container { margin-bottom: 25px; transition: transform 0.3s ease; }
-        .fileira-titulo { margin-left: 50px; font-size: 1.4rem; font-weight: bold; margin-bottom: 10px; color: #cbd5e1; }
+        /* Estrutura de Fileiras */
+        #conteudo { height: calc(100vh - 80px); overflow-y: hidden; padding-top: 20px; }
+        .fileira-container { margin-bottom: 30px; transition: transform 0.3s ease; }
+        .titulo-gen { margin-left: 50px; font-size: 1.2rem; color: #94a3b8; margin-bottom: 10px; }
         
         .trilho { 
-            display: flex; 
-            gap: 15px; 
-            padding: 10px 50px;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
+            display: flex; gap: 15px; padding: 10px 50px; 
+            overflow-x: hidden; scroll-behavior: smooth; 
         }
 
-        /* Card Otimizado */
+        /* Cards */
         .card { 
-            flex: 0 0 var(--card-w); 
-            height: var(--card-h);
-            position: relative;
-            outline: none;
-            cursor: pointer;
+            flex: 0 0 160px; height: 240px; border-radius: 10px; 
+            overflow: hidden; background: #1e293b; outline: none; 
+            transition: 0.2s; position: relative;
         }
-        .card img { 
-            width: 100%; height: 100%; 
-            object-fit: cover; 
-            border-radius: 8px; 
-            background: #1e293b; /* Placeholder enquanto carrega */
-            border: 3px solid transparent;
-            transition: 0.2s;
-        }
+        .card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
         .card p { 
-            position: absolute; bottom: 0; width: 100%; 
-            background: rgba(0,0,0,0.7); margin: 0; padding: 5px;
-            font-size: 11px; text-align: center; border-radius: 0 0 8px 8px;
+            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8);
+            margin: 0; padding: 5px; font-size: 12px; text-align: center;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        /* Efeito de Foco do Controle Remoto */
-        .card:focus img { border-color: var(--destaque); transform: scale(1.1); box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
-        .card:focus p { background: var(--destaque); color: #000; font-weight: bold; }
+        /* Foco do Controle Remoto */
+        .card:focus { transform: scale(1.1); z-index: 10; border: 4px solid var(--destaque); }
+        .card:focus img { opacity: 1; }
+        .card:focus p { background: var(--destaque); color: #000; }
     </style>
 </head>
 <body>
 
 <header>
-    <input type="text" id="busca" placeholder="Pesquisar títulos...">
-    <div id="status">Carregando catálogo...</div>
+    <input type="text" id="busca" placeholder="Buscar título (Controle OK)...">
+    <select id="genero-select"><option value="">Todos os Gêneros</option></select>
 </header>
 
 <div id="conteudo"></div>
 
 <script>
-let catalogo = [];
-let focoV = 0; // Índice da fileira
-let focoH = 0; // Índice do filme na fileira
+let filmes = [];
+let focoV = 0; // Linha
+let focoH = 0; // Coluna
 
-async function iniciar() {
-    try {
-        const resp = await fetch("catalogo.json");
-        catalogo = await resp.json();
-        document.getElementById("status").innerText = `${catalogo.length} títulos disponíveis`;
-        
+// 1. Carregar o JSON (Funciona offline/GitHub)
+fetch("catalogo.json")
+    .then(r => r.json())
+    .then(dados => {
+        filmes = dados;
+        popularGeneros();
         montarHome();
-    } catch (e) {
-        console.error("Erro ao carregar JSON", e);
-    }
-}
-
-function montarHome() {
-    const container = document.getElementById("conteudo");
-    container.innerHTML = "";
-
-    // 1. Criar fileira de "Adicionados Recentemente" (primeiros 20)
-    criarFileira("Destaques", catalogo.slice(0, 20));
-
-    // 2. Criar fileiras por Gênero (Dinâmico)
-    const generosSet = new Set();
-    catalogo.forEach(f => f.generos.forEach(g => generosSet.add(g)));
-    
-    // Pegamos os 10 primeiros gêneros para não pesar a home
-    const principaisGeneros = Array.from(generosSet).slice(0, 10);
-    
-    principaisGeneros.forEach(gen => {
-        const filmesGen = catalogo.filter(f => f.generos.includes(gen)).slice(0, 20);
-        criarFileira(gen, filmesGen);
     });
 
-    // Focar no primeiro filme após carregar
-    setTimeout(() => focarCard(), 500);
+function popularGeneros() {
+    const gens = [...new Set(filmes.flatMap(f => f.generos))];
+    const sel = document.getElementById("genero-select");
+    gens.sort().forEach(g => sel.add(new Option(g, g)));
 }
 
-function criarFileira(titulo, listaFilmes) {
-    const section = document.createElement("div");
-    section.className = "fileira-container";
+function montarHome(lista = filmes) {
+    const container = document.getElementById("conteudo");
+    container.innerHTML = "";
     
-    section.innerHTML = `
-        <div class="fileira-titulo">${titulo}</div>
+    // Pegar apenas os primeiros 8 gêneros para a Home não travar
+    const generos = [...new Set(lista.flatMap(f => f.generos))].slice(0, 8);
+    
+    // Adiciona "Destaques" (os 15 primeiros do JSON)
+    criarFileira("Destaques", lista.slice(0, 15));
+
+    // Adiciona Fileiras por Gênero
+    generos.forEach(g => {
+        const filmesDoGeral = lista.filter(f => f.generos.includes(g)).slice(0, 15);
+        if(filmesDoGeral.length > 0) criarFileira(g, filmesDoGeral);
+    });
+
+    setTimeout(atualizarFoco, 300);
+}
+
+function criarFileira(titulo, itens) {
+    const div = document.createElement("div");
+    div.className = "fileira-container";
+    div.innerHTML = `
+        <div class="titulo-gen">${titulo}</div>
         <div class="trilho">
-            ${listaFilmes.map(f => `
-                <div class="card" tabindex="0" onclick="abrirFilme('${f.link}')">
+            ${itens.map(f => `
+                <div class="card" tabindex="0" onclick="location.href='filme.html?id=${f.id}'">
                     <img src="${f.capa}" loading="lazy">
                     <p>${f.titulo}</p>
                 </div>
             `).join('')}
         </div>
     `;
-    document.getElementById("conteudo").appendChild(section);
+    document.getElementById("conteudo").appendChild(div);
 }
 
-function abrirFilme(url) {
-    // Aqui você pode redirecionar para seu player.html ou abrir direto o link
-    window.location.href = "player.html?url=" + encodeURIComponent(url);
-}
+// 2. Lógica do Controle Remoto (Setas e OK)
+document.addEventListener("keydown", e => {
+    const trilhos = document.querySelectorAll(".trilho");
+    if(!trilhos.length) return;
 
-// NAVEGAÇÃO POR CONTROLE REMOTO
-document.addEventListener("keydown", (e) => {
-    const fileiras = document.querySelectorAll(".trilho");
-    if (!fileiras[focoV]) return;
-
-    const cards = fileiras[focoV].querySelectorAll(".card");
-
-    if (e.key === "ArrowRight") {
-        if (focoH < cards.length - 1) focoH++;
-    } 
-    else if (e.key === "ArrowLeft") {
-        if (focoH > 0) focoH--;
-    } 
-    else if (e.key === "ArrowDown") {
-        if (focoV < fileiras.length - 1) {
-            focoV++;
-            focoH = Math.min(focoH, fileiras[focoV].querySelectorAll(".card").length - 1);
-        }
-    } 
-    else if (e.key === "ArrowUp") {
-        if (focoV > 0) {
-            focoV--;
-            focoH = Math.min(focoH, fileiras[focoV].querySelectorAll(".card").length - 1);
-        }
-    } 
+    if (e.key === "ArrowRight") focoH++;
+    else if (e.key === "ArrowLeft") focoH = Math.max(0, focoH - 1);
+    else if (e.key === "ArrowDown") { focoV++; focoH = 0; }
+    else if (e.key === "ArrowUp") { focoV = Math.max(0, focoV - 1); focoH = 0; }
     else if (e.key === "Enter") {
-        cards[focoH].click();
+        const atual = trilhos[focoV].querySelectorAll(".card")[focoH];
+        if(atual) atual.click();
+        return;
     }
 
-    focarCard();
+    // Limites verticais
+    if (focoV >= trilhos.length) focoV = trilhos.length - 1;
+    
+    // Limites horizontais
+    const cardsNaLinha = trilhos[focoV].querySelectorAll(".card");
+    if (focoH >= cardsNaLinha.length) focoH = cardsNaLinha.length - 1;
+
+    atualizarFoco();
     e.preventDefault();
 });
 
-function focarCard() {
+function atualizarFoco() {
     const fileiras = document.querySelectorAll(".fileira-container");
     const trilhos = document.querySelectorAll(".trilho");
-    
-    const cardAlvo = trilhos[focoV].querySelectorAll(".card")[focoH];
-    
-    if (cardAlvo) {
-        cardAlvo.focus();
-        
-        // Scroll horizontal do trilho
-        cardAlvo.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        
-        // Scroll vertical da página (move a fileira inteira)
+    const card = trilhos[focoV]?.querySelectorAll(".card")[focoH];
+
+    if (card) {
+        card.focus();
+        // Centraliza o card horizontalmente
+        card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        // Move a fileira inteira para o centro vertical
         fileiras[focoV].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 
-// BUSCA (Filtragem rápida)
+// 3. Busca e Filtro (Mantém a TV leve mostrando apenas 20 resultados)
 document.getElementById("busca").oninput = (e) => {
-    const termo = e.target.value.toLowerCase();
-    if (termo.length > 2) {
-        const resultados = catalogo.filter(f => f.titulo.toLowerCase().includes(termo)).slice(0, 30);
-        const container = document.getElementById("conteudo");
-        container.innerHTML = "";
-        criarFileira("Resultados da Busca", resultados);
+    const t = e.target.value.toLowerCase();
+    if(t.length > 2) {
+        const res = filmes.filter(f => f.titulo.toLowerCase().includes(t)).slice(0, 20);
+        document.getElementById("conteudo").innerHTML = "";
+        criarFileira("Resultado da Busca", res);
         focoV = 0; focoH = 0;
-        setTimeout(focarCard, 100);
-    } else if (termo.length === 0) {
+    } else if (t.length === 0) {
         montarHome();
     }
 };
-
-iniciar();
 </script>
-
 </body>
 </html>
