@@ -2,114 +2,196 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
-    <title>Meu Streaming - Início</title>
+    <title>Minha TV Box - Streaming</title>
     <style>
-        body { background:#0f172a; color:#fff; font-family:Arial, sans-serif; margin:0; padding:20px; overflow-x:hidden; }
-        #topbar { display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap; }
-        input, select, button { padding:10px; border-radius:6px; border:none; font-size:14px; background:#1e293b; color:#fff; outline:none; }
-        input:focus, select:focus, button:focus { background:#334155; box-shadow:0 0 0 2px #38bdf8; }
+        :root { --destaque: #38bdf8; --bg: #070b14; --card-w: 180px; --card-h: 260px; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', Roboto, Arial; margin: 0; overflow: hidden; }
         
-        .grid { display:grid; grid-template-columns:repeat(auto-fill, 180px); gap:20px; justify-content:center; }
-        .card { cursor:pointer; transition:.2s; outline:none; position:relative; }
-        .card:hover, .card:focus { transform:scale(1.1); z-index:10; }
-        .card img { width:180px; height:260px; object-fit:cover; border-radius:12px; box-shadow:0 10px 20px rgba(0,0,0,0.5); }
-        .card:focus img { border: 3px solid #38bdf8; }
-        .card p { font-size:13px; margin-top:8px; text-align:center; font-weight:bold; }
+        /* Cabeçalho Fixo */
+        header { padding: 20px 50px; background: linear-gradient(to bottom, rgba(7,11,20,1), transparent); display: flex; gap: 20px; align-items: center; }
+        input { background: #1e293b; border: 2px solid transparent; color: #fff; padding: 12px; border-radius: 8px; width: 300px; outline: none; }
+        input:focus { border-color: var(--destaque); }
+
+        /* Container de Fileiras */
+        #conteudo { height: calc(100vh - 100px); overflow-y: hidden; padding-bottom: 50px; }
+        .fileira-container { margin-bottom: 25px; transition: transform 0.3s ease; }
+        .fileira-titulo { margin-left: 50px; font-size: 1.4rem; font-weight: bold; margin-bottom: 10px; color: #cbd5e1; }
+        
+        .trilho { 
+            display: flex; 
+            gap: 15px; 
+            padding: 10px 50px;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Card Otimizado */
+        .card { 
+            flex: 0 0 var(--card-w); 
+            height: var(--card-h);
+            position: relative;
+            outline: none;
+            cursor: pointer;
+        }
+        .card img { 
+            width: 100%; height: 100%; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            background: #1e293b; /* Placeholder enquanto carrega */
+            border: 3px solid transparent;
+            transition: 0.2s;
+        }
+        .card p { 
+            position: absolute; bottom: 0; width: 100%; 
+            background: rgba(0,0,0,0.7); margin: 0; padding: 5px;
+            font-size: 11px; text-align: center; border-radius: 0 0 8px 8px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Efeito de Foco do Controle Remoto */
+        .card:focus img { border-color: var(--destaque); transform: scale(1.1); box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+        .card:focus p { background: var(--destaque); color: #000; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<h2>🎬 Meu Streaming</h2>
+<header>
+    <input type="text" id="busca" placeholder="Pesquisar títulos...">
+    <div id="status">Carregando catálogo...</div>
+</header>
 
-<div id="topbar">
-    <input id="busca" placeholder="Buscar filme..." autocomplete="off">
-    <select id="genero">
-        <option value="">Todos os gêneros</option>
-    </select>
-    <button onclick="mostrarFavoritos()">⭐ Favoritos</button>
-    <button onclick="render(filmes)">📂 Todos</button>
-</div>
-
-<div id="grid" class="grid">Carregando catálogo...</div>
+<div id="conteudo"></div>
 
 <script>
-let filmes = [];
-let filmesFiltrados = [];
-let pos = 0;
+let catalogo = [];
+let focoV = 0; // Índice da fileira
+let focoH = 0; // Índice do filme na fileira
 
-// Carregar Dados
-fetch("catalogo.json")
-    .then(r => r.json())
-    .then(lista => {
-        filmes = lista;
-        montarGeneros(lista);
-        render(lista);
-    });
-
-function montarGeneros(lista) {
-    const generos = new Set();
-    lista.forEach(f => f.generos?.forEach(g => generos.add(g)));
-    const select = document.getElementById("genero");
-    generos.forEach(g => {
-        const op = new Option(g, g);
-        select.add(op);
-    });
+async function iniciar() {
+    try {
+        const resp = await fetch("catalogo.json");
+        catalogo = await resp.json();
+        document.getElementById("status").innerText = `${catalogo.length} títulos disponíveis`;
+        
+        montarHome();
+    } catch (e) {
+        console.error("Erro ao carregar JSON", e);
+    }
 }
 
-function render(lista) {
-    filmesFiltrados = lista;
-    const grid = document.getElementById("grid");
-    grid.innerHTML = lista.length ? "" : "<p>Nenhum filme encontrado.</p>";
+function montarHome() {
+    const container = document.getElementById("conteudo");
+    container.innerHTML = "";
+
+    // 1. Criar fileira de "Adicionados Recentemente" (primeiros 20)
+    criarFileira("Destaques", catalogo.slice(0, 20));
+
+    // 2. Criar fileiras por Gênero (Dinâmico)
+    const generosSet = new Set();
+    catalogo.forEach(f => f.generos.forEach(g => generosSet.add(g)));
     
-    lista.forEach((f, i) => {
-        const d = document.createElement("div");
-        d.className = "card";
-        d.tabIndex = 0;
-        d.innerHTML = `<img src="${f.capa}"><p>${f.titulo}</p>`;
-        d.onclick = () => location.href = "filme.html?id=" + f.id;
-        grid.appendChild(d);
+    // Pegamos os 10 primeiros gêneros para não pesar a home
+    const principaisGeneros = Array.from(generosSet).slice(0, 10);
+    
+    principaisGeneros.forEach(gen => {
+        const filmesGen = catalogo.filter(f => f.generos.includes(gen)).slice(0, 20);
+        criarFileira(gen, filmesGen);
     });
-    pos = 0; // Reseta posição ao renderizar
+
+    // Focar no primeiro filme após carregar
+    setTimeout(() => focarCard(), 500);
 }
 
-// Filtros
-const filtrar = () => {
-    const termo = busca.value.toLowerCase();
-    const gen = genero.value;
-    const res = filmes.filter(f => 
-        f.titulo.toLowerCase().includes(termo) && (gen === "" || f.generos.includes(gen))
-    );
-    render(res);
-};
-
-busca.oninput = filtrar;
-genero.onchange = filtrar;
-
-function mostrarFavoritos() {
-    const favs = JSON.parse(localStorage.getItem("favs") || "[]");
-    render(filmes.filter(f => favs.includes(f.id)));
+function criarFileira(titulo, listaFilmes) {
+    const section = document.createElement("div");
+    section.className = "fileira-container";
+    
+    section.innerHTML = `
+        <div class="fileira-titulo">${titulo}</div>
+        <div class="trilho">
+            ${listaFilmes.map(f => `
+                <div class="card" tabindex="0" onclick="abrirFilme('${f.link}')">
+                    <img src="${f.capa}" loading="lazy">
+                    <p>${f.titulo}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    document.getElementById("conteudo").appendChild(section);
 }
 
-// CONTROLE REMOTO (MODO TV)
-document.addEventListener("keydown", e => {
-    const cards = document.querySelectorAll(".card");
-    if (!cards.length) return;
+function abrirFilme(url) {
+    // Aqui você pode redirecionar para seu player.html ou abrir direto o link
+    window.location.href = "player.html?url=" + encodeURIComponent(url);
+}
 
-    // Calcula colunas dinamicamente para o pulo de linha
-    const colunas = Math.floor(document.getElementById("grid").offsetWidth / 200);
+// NAVEGAÇÃO POR CONTROLE REMOTO
+document.addEventListener("keydown", (e) => {
+    const fileiras = document.querySelectorAll(".trilho");
+    if (!fileiras[focoV]) return;
 
-    if (e.key === "ArrowRight") pos++;
-    else if (e.key === "ArrowLeft") pos--;
-    else if (e.key === "ArrowDown") pos += colunas;
-    else if (e.key === "ArrowUp") pos -= colunas;
-    else if (e.key === "Enter") { cards[pos].click(); return; }
-    else return;
+    const cards = fileiras[focoV].querySelectorAll(".card");
 
-    pos = Math.max(0, Math.min(pos, cards.length - 1));
-    cards[pos].focus();
-    cards[pos].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (e.key === "ArrowRight") {
+        if (focoH < cards.length - 1) focoH++;
+    } 
+    else if (e.key === "ArrowLeft") {
+        if (focoH > 0) focoH--;
+    } 
+    else if (e.key === "ArrowDown") {
+        if (focoV < fileiras.length - 1) {
+            focoV++;
+            focoH = Math.min(focoH, fileiras[focoV].querySelectorAll(".card").length - 1);
+        }
+    } 
+    else if (e.key === "ArrowUp") {
+        if (focoV > 0) {
+            focoV--;
+            focoH = Math.min(focoH, fileiras[focoV].querySelectorAll(".card").length - 1);
+        }
+    } 
+    else if (e.key === "Enter") {
+        cards[focoH].click();
+    }
+
+    focarCard();
     e.preventDefault();
 });
+
+function focarCard() {
+    const fileiras = document.querySelectorAll(".fileira-container");
+    const trilhos = document.querySelectorAll(".trilho");
+    
+    const cardAlvo = trilhos[focoV].querySelectorAll(".card")[focoH];
+    
+    if (cardAlvo) {
+        cardAlvo.focus();
+        
+        // Scroll horizontal do trilho
+        cardAlvo.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        
+        // Scroll vertical da página (move a fileira inteira)
+        fileiras[focoV].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// BUSCA (Filtragem rápida)
+document.getElementById("busca").oninput = (e) => {
+    const termo = e.target.value.toLowerCase();
+    if (termo.length > 2) {
+        const resultados = catalogo.filter(f => f.titulo.toLowerCase().includes(termo)).slice(0, 30);
+        const container = document.getElementById("conteudo");
+        container.innerHTML = "";
+        criarFileira("Resultados da Busca", resultados);
+        focoV = 0; focoH = 0;
+        setTimeout(focarCard, 100);
+    } else if (termo.length === 0) {
+        montarHome();
+    }
+};
+
+iniciar();
 </script>
+
 </body>
 </html>
