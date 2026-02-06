@@ -17,10 +17,6 @@ header{
   padding:20px;
 }
 
-h1{
-  margin-bottom:10px;
-}
-
 #busca{
   width:100%;
   padding:12px;
@@ -94,8 +90,8 @@ h1{
 <body>
 
 <header>
-  <h1>🎬Meus Filmes</h1>
-     <h2>!!***CESAR***!!</H2>
+  <h1>🎬 Meus Filmes</h1>
+  <h2>                  🎬 !! CESAR !! 🎬 </H2>
   <input id="busca" placeholder="Buscar filme..." tabindex="0">
 </header>
 
@@ -119,7 +115,9 @@ let pagina = 0;
 const POR_PAGINA = 30;
 let generoAtual = null;
 
-/* ===== CARREGAR CATÁLOGO ===== */
+/* ===============================
+   CARREGAR CATÁLOGO
+================================ */
 fetch("catalogo.json")
 .then(r=>r.json())
 .then(lista=>{
@@ -129,18 +127,27 @@ fetch("catalogo.json")
   grid.innerHTML = "";
   criarBarraGeneros(filmes);
   renderPagina();
+
+  // FOCO INICIAL (OBRIGATÓRIO EM TV)
+  setTimeout(()=>{
+    const primeiroGenero = document.querySelector(".genero");
+    if(primeiroGenero) primeiroGenero.focus();
+  },300);
 });
 
-/* ===== RENDER POR PÁGINA ===== */
+/* ===============================
+   RENDER POR PÁGINA
+================================ */
 function renderPagina(){
   const inicio = pagina * POR_PAGINA;
   const fim = inicio + POR_PAGINA;
   const parte = visiveis.slice(inicio, fim);
 
-  parte.forEach(f=>{
+  parte.forEach((f,index)=>{
     const card = document.createElement("div");
     card.className = "card";
     card.tabIndex = 0;
+    card.setAttribute("role","button");
 
     card.innerHTML = `
       <img src="${f.capa}" loading="lazy">
@@ -156,26 +163,34 @@ function renderPagina(){
   });
 }
 
-/* ===== ABRIR FILME ===== */
+/* ===============================
+   ABRIR FILME
+================================ */
 function abrirFilme(id){
   location.href = "filme.html?id=" + id;
 }
 
-/* ===== CARREGAR MAIS ===== */
+/* ===============================
+   CARREGAR MAIS
+================================ */
 mais.onclick = ()=>{
   pagina++;
   renderPagina();
 };
 
-/* ===== BUSCA ===== */
+/* ===============================
+   BUSCA
+================================ */
 busca.oninput = aplicarFiltros;
 
-/* ===== CRIAR BARRA DE GÊNEROS ===== */
+/* ===============================
+   CRIAR BARRA DE GÊNEROS
+================================ */
 function criarBarraGeneros(lista){
   const set = new Set();
 
   lista.forEach(f=>{
-    (f.generos || []).forEach(g=>set.add(g));
+    (f.generos||[]).forEach(g=>set.add(g));
   });
 
   barraGeneros.innerHTML = "";
@@ -193,8 +208,10 @@ function criarBarraGeneros(lista){
   });
 }
 
-/* ===== CRIAR BOTÃO DE GÊNERO ===== */
-function criarGenero(texto, acao){
+/* ===============================
+   CRIAR BOTÃO DE GÊNERO
+================================ */
+function criarGenero(texto,acao){
   const btn = document.createElement("div");
   btn.className = "genero";
   btn.tabIndex = 0;
@@ -208,7 +225,9 @@ function criarGenero(texto, acao){
   barraGeneros.appendChild(btn);
 }
 
-/* ===== APLICAR FILTROS ===== */
+/* ===============================
+   APLICAR FILTROS
+================================ */
 function aplicarFiltros(){
   let lista = filmes;
 
@@ -225,11 +244,42 @@ function aplicarFiltros(){
     );
   }
 
-  visiveis = lista.slice(0,200); // LIMITE TV
+  visiveis = lista.slice(0,200); // LIMITE PARA TV
   pagina = 0;
   grid.innerHTML = "";
   renderPagina();
 }
+
+/* ===============================
+   CONTROLE DE SETAS (TV)
+================================ */
+document.addEventListener("keydown",e=>{
+  const foco = document.activeElement;
+  if(!foco) return;
+
+  // ENTER
+  if(e.key==="Enter"){
+    foco.click();
+  }
+
+  // ↓ DA BARRA → GRID
+  if(e.key==="ArrowDown" && foco.classList.contains("genero")){
+    const primeiroCard = document.querySelector(".card");
+    if(primeiroCard){
+      primeiroCard.focus();
+      e.preventDefault();
+    }
+  }
+
+  // ↑ DO GRID → BARRA
+  if(e.key==="ArrowUp" && foco.classList.contains("card")){
+    const primeiroGenero = document.querySelector(".genero");
+    if(primeiroGenero){
+      primeiroGenero.focus();
+      e.preventDefault();
+    }
+  }
+});
 </script>
 
 </body>
