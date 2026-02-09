@@ -95,17 +95,14 @@ Promise.all([
       <video id="player" controls>
   <source src="${local.link}">
 </video>
-
-<div style="margin-top:15px;display:flex;gap:15px;flex-wrap:wrap">
-  <a href="${local.link}" 
-   target="_blank"
+<a href="intent://${local.link.replace('https://','')}#Intent;scheme=https;type=video/mp4;end"
    tabindex="0"
    style="
      display:inline-block;
      padding:12px 20px;
      font-size:16px;
      border-radius:8px;
-     background:#fff;
+     background:#22c55e;
      color:#000;
      text-decoration:none;
    ">
@@ -132,4 +129,5 @@ Promise.all([
 </script>
 </body>
 </html>
+
 
