@@ -97,10 +97,20 @@ Promise.all([
 </video>
 
 <div style="margin-top:15px;display:flex;gap:15px;flex-wrap:wrap">
-  <button id="externo" tabindex="0"
-  style="padding:12px 20px;font-size:16px;border-radius:8px;border:none">
-  ▶️ Abrir no player externo
-</button>
+  <a href="${local.link}" 
+   target="_blank"
+   tabindex="0"
+   style="
+     display:inline-block;
+     padding:12px 20px;
+     font-size:16px;
+     border-radius:8px;
+     background:#fff;
+     color:#000;
+     text-decoration:none;
+   ">
+   ▶️ Abrir no player externo
+</a>
 </div>
       <div class="elenco">
         ${(creditos.cast||[]).slice(0,10).map(e=>`
