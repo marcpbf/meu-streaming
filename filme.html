@@ -12,6 +12,11 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 .elenco{display:flex;gap:10px;overflow-x:auto;margin-top:30px}
 .elenco div{text-align:center;font-size:12px}
 .elenco img{width:90px;border-radius:8px}
+button:focus{
+  outline:none;
+  background:#22c55e;
+  color:#000;
+}
 </style>
 </head>
 
@@ -28,6 +33,14 @@ console.log("ID:", id);
 
 if(!id){
   app.innerHTML = "Sem ID";
+  setTimeout(()=>{
+  const btn = document.getElementById("externo");
+  if(btn){
+    btn.onclick = () => {
+      window.location.href = local.link;
+    };
+  }
+},100);
 }else{
 
 Promise.all([
@@ -80,9 +93,15 @@ Promise.all([
       </div>
 
       <video id="player" controls>
-        <source src="${local.link}">
-      </video>
+  <source src="${local.link}">
+</video>
 
+<div style="margin-top:15px;display:flex;gap:15px;flex-wrap:wrap">
+  <button id="externo" tabindex="0"
+  style="padding:12px 20px;font-size:16px;border-radius:8px;border:none">
+  ▶️ Abrir no player externo
+</button>
+</div>
       <div class="elenco">
         ${(creditos.cast||[]).slice(0,10).map(e=>`
           <div>
@@ -103,3 +122,4 @@ Promise.all([
 </script>
 </body>
 </html>
+
