@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Meus Filmes</title>
 
 <style>
@@ -9,12 +10,16 @@ body{
   margin:0;
   background:#000;
   color:#fff;
-  font-family:Arial;
+  font-family:Arial, sans-serif;
 }
 
 /* ===== CABEÇALHO ===== */
 header{
   padding:20px;
+}
+
+header h1, header h2{
+  margin:0 0 10px 0;
 }
 
 #busca{
@@ -23,6 +28,35 @@ header{
   font-size:18px;
   border-radius:8px;
   border:none;
+  box-sizing:border-box;
+}
+
+/* ===== ÁREA DE FILTROS ===== */
+#filtros{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+  gap:12px;
+  padding:0 20px 20px;
+}
+
+.filtro-box{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.filtro-box label{
+  font-size:14px;
+  color:#ccc;
+}
+
+.filtro-box select{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  background:#1f1f1f;
+  color:#fff;
+  font-size:15px;
 }
 
 /* ===== BARRA DE GÊNEROS ===== */
@@ -30,7 +64,8 @@ header{
   display:flex;
   gap:12px;
   overflow-x:auto;
-  padding:10px 20px;
+  padding:10px 20px 16px;
+  scrollbar-width:thin;
 }
 
 .genero{
@@ -39,6 +74,14 @@ header{
   border-radius:20px;
   font-size:16px;
   white-space:nowrap;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+
+.genero.ativo{
+  background:#22c55e;
+  color:#000;
+  font-weight:bold;
 }
 
 .genero:focus{
@@ -47,40 +90,151 @@ header{
   color:#000;
 }
 
+/* ===== INFO RESULTADOS ===== */
+#infoResultados{
+  padding:0 20px 10px;
+  color:#bbb;
+  font-size:14px;
+}
+
 /* ===== GRID ===== */
 #grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  grid-template-columns:repeat(auto-fill, minmax(160px,1fr));
   gap:20px;
   padding:20px;
 }
 
 .card{
   transition:transform .15s;
+  cursor:pointer;
+}
+
+.card:hover{
+  transform:scale(1.03);
 }
 
 .card img{
   width:100%;
   border-radius:12px;
+  aspect-ratio:2/3;
+  object-fit:cover;
+  background:#111;
 }
 
 .card p{
   text-align:center;
-  font-size:1.4rem;
-  margin-top:8px;
+  font-size:1rem;
+  margin:8px 0 0;
+  line-height:1.3;
+}
+
+.card:focus{
+  outline:2px solid #22c55e;
+  border-radius:12px;
 }
 
 .card:focus p{
-  font-size:1.5rem;
+  font-size:1.05rem;
   font-weight:bold;
 }
 
-/* ===== BOTÃO MAIS ===== */
-#mais{
+/* ===== BOTÕES ===== */
+.botoes{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+  padding:10px 20px 30px;
+}
+
+#mais, #limparFiltros{
   display:block;
-  margin:30px auto;
-  padding:14px 40px;
+  padding:14px 24px;
   font-size:18px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+#mais{
+  background:#22c55e;
+  color:#000;
+  font-weight:bold;
+}
+
+#limparFiltros{
+  background:#333;
+  color:#fff;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px){
+  header{
+    padding:16px;
+  }
+
+  header h1{
+    font-size:1.5rem;
+  }
+
+  header h2{
+    font-size:1rem;
+  }
+
+  #busca{
+    font-size:16px;
+    padding:10px;
+  }
+
+  #filtros{
+    grid-template-columns:repeat(2, 1fr);
+    padding:0 16px 16px;
+  }
+
+  #generos{
+    padding:8px 16px 14px;
+    gap:10px;
+  }
+
+  .genero{
+    font-size:14px;
+    padding:8px 14px;
+  }
+
+  #infoResultados{
+    padding:0 16px 8px;
+    font-size:13px;
+  }
+
+  #grid{
+    grid-template-columns:repeat(2, 1fr);
+    gap:14px;
+    padding:16px;
+  }
+
+  .card p{
+    font-size:0.95rem;
+  }
+
+  .botoes{
+    padding:10px 16px 24px;
+  }
+
+  #mais, #limparFiltros{
+    width:100%;
+    font-size:16px;
+  }
+}
+
+@media (max-width: 480px){
+  #filtros{
+    grid-template-columns:1fr;
+  }
+
+  #grid{
+    grid-template-columns:repeat(2, 1fr);
+  }
 }
 </style>
 </head>
@@ -89,23 +243,109 @@ header{
 
 <header>
   <h1>🎬 Meus Filmes</h1>
-  <h2>                  🎬 !! CESAR !! 🎬 </H2>
+  <h2>🎬 !! CESAR !! 🎬</h2>
   <input id="busca" placeholder="Buscar filme..." tabindex="0">
 </header>
+
+<!-- FILTROS -->
+<div id="filtros">
+  <div class="filtro-box">
+    <label for="filtroIdioma">Idioma</label>
+    <select id="filtroIdioma" tabindex="0">
+      <option value="">Todos</option>
+    </select>
+  </div>
+
+  <div class="filtro-box">
+    <label for="filtroDuracao">Duração</label>
+    <select id="filtroDuracao" tabindex="0">
+      <option value="">Todas</option>
+      <option value="ate90">Até 90 min</option>
+      <option value="90a120">90 a 120 min</option>
+      <option value="120a150">120 a 150 min</option>
+      <option value="mais150">Mais de 150 min</option>
+    </select>
+  </div>
+
+  <div class="filtro-box">
+    <label for="filtroNota">Nota</label>
+    <select id="filtroNota" tabindex="0">
+      <option value="">Todas</option>
+      <option value="7">7+</option>
+      <option value="8">8+</option>
+      <option value="9">9+</option>
+    </select>
+  </div>
+
+  <div class="filtro-box">
+    <label for="filtroVotos">Votos</label>
+    <select id="filtroVotos" tabindex="0">
+      <option value="">Todos</option>
+      <option value="100">100+</option>
+      <option value="500">500+</option>
+      <option value="1000">1000+</option>
+      <option value="5000">5000+</option>
+    </select>
+  </div>
+
+  <div class="filtro-box">
+    <label for="filtroPopularidade">Popularidade</label>
+    <select id="filtroPopularidade" tabindex="0">
+      <option value="">Todas</option>
+      <option value="10">10+</option>
+      <option value="20">20+</option>
+      <option value="50">50+</option>
+      <option value="100">100+</option>
+    </select>
+  </div>
+
+  <div class="filtro-box">
+    <label for="ordenacao">Ordenar por</label>
+    <select id="ordenacao" tabindex="0">
+      <option value="">Padrão</option>
+      <option value="titulo_asc">Título (A-Z)</option>
+      <option value="titulo_desc">Título (Z-A)</option>
+      <option value="nota_desc">Nota (maior primeiro)</option>
+      <option value="nota_asc">Nota (menor primeiro)</option>
+      <option value="votos_desc">Votos (maior primeiro)</option>
+      <option value="votos_asc">Votos (menor primeiro)</option>
+      <option value="popularidade_desc">Popularidade (maior primeiro)</option>
+      <option value="popularidade_asc">Popularidade (menor primeiro)</option>
+      <option value="duracao_desc">Duração (maior primeiro)</option>
+      <option value="duracao_asc">Duração (menor primeiro)</option>
+    </select>
+  </div>
+</div>
 
 <!-- BARRA DE GÊNEROS -->
 <div id="generos"></div>
 
+<!-- INFO -->
+<div id="infoResultados"></div>
+
 <!-- GRID -->
 <div id="grid"></div>
 
-<button id="mais" tabindex="0">Carregar mais</button>
+<!-- BOTÕES -->
+<div class="botoes">
+  <button id="limparFiltros" tabindex="0">Limpar filtros</button>
+  <button id="mais" tabindex="0">Carregar mais</button>
+</div>
 
 <script>
 const grid = document.getElementById("grid");
 const busca = document.getElementById("busca");
 const mais = document.getElementById("mais");
 const barraGeneros = document.getElementById("generos");
+const infoResultados = document.getElementById("infoResultados");
+
+const filtroIdioma = document.getElementById("filtroIdioma");
+const filtroDuracao = document.getElementById("filtroDuracao");
+const filtroNota = document.getElementById("filtroNota");
+const filtroVotos = document.getElementById("filtroVotos");
+const filtroPopularidade = document.getElementById("filtroPopularidade");
+const ordenacao = document.getElementById("ordenacao");
+const limparFiltros = document.getElementById("limparFiltros");
 
 let filmes = [];
 let visiveis = [];
@@ -114,23 +354,48 @@ const POR_PAGINA = 30;
 let generoAtual = null;
 
 /* ===============================
+   AJUDANTES
+================================ */
+function numeroSeguro(valor){
+  if(valor === null || valor === undefined) return 0;
+  if(typeof valor === "number") return valor;
+
+  const limpo = String(valor)
+    .replace(",", ".")
+    .replace(/[^\d.]/g, "");
+
+  const n = parseFloat(limpo);
+  return isNaN(n) ? 0 : n;
+}
+
+function textoSeguro(valor){
+  return (valor || "").toString().trim();
+}
+
+/* ===============================
    CARREGAR CATÁLOGO
 ================================ */
 fetch("catalogo.json")
-.then(r=>r.json())
-.then(lista=>{
+.then(r => r.json())
+.then(lista => {
   filmes = lista;
   visiveis = lista;
   pagina = 0;
   grid.innerHTML = "";
-  criarBarraGeneros(filmes);
-  renderPagina();
 
-  // FOCO INICIAL (OBRIGATÓRIO EM TV)
-  setTimeout(()=>{
+  criarBarraGeneros(filmes);
+  preencherFiltroIdiomas(filmes);
+  renderPagina();
+  atualizarInfo();
+
+  setTimeout(() => {
     const primeiroGenero = document.querySelector(".genero");
     if(primeiroGenero) primeiroGenero.focus();
-  },300);
+  }, 300);
+})
+.catch(err => {
+  console.error("Erro ao carregar catalogo.json:", err);
+  infoResultados.textContent = "Erro ao carregar o catálogo.";
 });
 
 /* ===============================
@@ -141,24 +406,27 @@ function renderPagina(){
   const fim = inicio + POR_PAGINA;
   const parte = visiveis.slice(inicio, fim);
 
-  parte.forEach((f,index)=>{
+  parte.forEach(f => {
     const card = document.createElement("div");
     card.className = "card";
     card.tabIndex = 0;
-    card.setAttribute("role","button");
+    card.setAttribute("role", "button");
 
     card.innerHTML = `
-      <img src="${f.capa}" loading="lazy">
-      <p>${f.titulo}</p>
+      <img src="${f.capa || ""}" loading="lazy" alt="${f.titulo || "Filme"}">
+      <p>${f.titulo || "Sem título"}</p>
     `;
 
-    card.onclick = ()=>abrirFilme(f.id);
-    card.onkeydown = e=>{
-      if(e.key==="Enter") abrirFilme(f.id);
+    card.onclick = () => abrirFilme(f.id);
+    card.onkeydown = e => {
+      if(e.key === "Enter") abrirFilme(f.id);
     };
 
     grid.appendChild(card);
   });
+
+  const totalRenderizado = Math.min((pagina + 1) * POR_PAGINA, visiveis.length);
+  mais.style.display = totalRenderizado < visiveis.length ? "block" : "none";
 }
 
 /* ===============================
@@ -171,15 +439,32 @@ function abrirFilme(id){
 /* ===============================
    CARREGAR MAIS
 ================================ */
-mais.onclick = ()=>{
+mais.onclick = () => {
   pagina++;
   renderPagina();
 };
 
 /* ===============================
-   BUSCA
+   PREENCHER IDIOMAS
 ================================ */
-busca.oninput = aplicarFiltros;
+function preencherFiltroIdiomas(lista){
+  const idiomas = new Set();
+
+  lista.forEach(f => {
+    const idioma = textoSeguro(f.idioma);
+    if(idioma) idiomas.add(idioma);
+  });
+
+  const ordenados = [...idiomas].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  filtroIdioma.innerHTML = '<option value="">Todos</option>';
+  ordenados.forEach(idioma => {
+    const op = document.createElement("option");
+    op.value = idioma;
+    op.textContent = idioma;
+    filtroIdioma.appendChild(op);
+  });
+}
 
 /* ===============================
    CRIAR BARRA DE GÊNEROS
@@ -187,81 +472,216 @@ busca.oninput = aplicarFiltros;
 function criarBarraGeneros(lista){
   const set = new Set();
 
-  lista.forEach(f=>{
-    (f.generos||[]).forEach(g=>set.add(g));
+  lista.forEach(f => {
+    (f.generos || []).forEach(g => set.add(g));
   });
 
   barraGeneros.innerHTML = "";
 
-  criarGenero("Todos", ()=>{
+  criarGenero("Todos", () => {
     generoAtual = null;
     aplicarFiltros();
+    marcarGeneroAtivo("Todos");
   });
 
-  set.forEach(g=>{
-    criarGenero(g, ()=>{
+  [...set].sort((a, b) => a.localeCompare(b, "pt-BR")).forEach(g => {
+    criarGenero(g, () => {
       generoAtual = g;
       aplicarFiltros();
+      marcarGeneroAtivo(g);
     });
   });
+
+  marcarGeneroAtivo("Todos");
 }
 
 /* ===============================
    CRIAR BOTÃO DE GÊNERO
 ================================ */
-function criarGenero(texto,acao){
+function criarGenero(texto, acao){
   const btn = document.createElement("div");
   btn.className = "genero";
   btn.tabIndex = 0;
   btn.textContent = texto;
+  btn.dataset.genero = texto;
 
   btn.onclick = acao;
-  btn.onkeydown = e=>{
-    if(e.key==="Enter") acao();
+  btn.onkeydown = e => {
+    if(e.key === "Enter") acao();
   };
 
   barraGeneros.appendChild(btn);
 }
 
+function marcarGeneroAtivo(nome){
+  document.querySelectorAll(".genero").forEach(btn => {
+    btn.classList.toggle("ativo", btn.dataset.genero === nome);
+  });
+}
+
 /* ===============================
-   APLICAR FILTROS
+   ORDENAÇÃO
 ================================ */
+function ordenarLista(lista){
+  const tipo = ordenacao.value;
+  if(!tipo) return lista;
+
+  const copia = [...lista];
+
+  switch(tipo){
+    case "titulo_asc":
+      copia.sort((a, b) => textoSeguro(a.titulo).localeCompare(textoSeguro(b.titulo), "pt-BR"));
+      break;
+
+    case "titulo_desc":
+      copia.sort((a, b) => textoSeguro(b.titulo).localeCompare(textoSeguro(a.titulo), "pt-BR"));
+      break;
+
+    case "nota_desc":
+      copia.sort((a, b) => numeroSeguro(b.nota) - numeroSeguro(a.nota));
+      break;
+
+    case "nota_asc":
+      copia.sort((a, b) => numeroSeguro(a.nota) - numeroSeguro(b.nota));
+      break;
+
+    case "votos_desc":
+      copia.sort((a, b) => numeroSeguro(b.votos) - numeroSeguro(a.votos));
+      break;
+
+    case "votos_asc":
+      copia.sort((a, b) => numeroSeguro(a.votos) - numeroSeguro(b.votos));
+      break;
+
+    case "popularidade_desc":
+      copia.sort((a, b) => numeroSeguro(b.popularidade) - numeroSeguro(a.popularidade));
+      break;
+
+    case "popularidade_asc":
+      copia.sort((a, b) => numeroSeguro(a.popularidade) - numeroSeguro(b.popularidade));
+      break;
+
+    case "duracao_desc":
+      copia.sort((a, b) => numeroSeguro(b.duracao) - numeroSeguro(a.duracao));
+      break;
+
+    case "duracao_asc":
+      copia.sort((a, b) => numeroSeguro(a.duracao) - numeroSeguro(b.duracao));
+      break;
+  }
+
+  return copia;
+}
+
+/* ===============================
+   FILTROS
+================================ */
+busca.oninput = aplicarFiltros;
+filtroIdioma.onchange = aplicarFiltros;
+filtroDuracao.onchange = aplicarFiltros;
+filtroNota.onchange = aplicarFiltros;
+filtroVotos.onchange = aplicarFiltros;
+filtroPopularidade.onchange = aplicarFiltros;
+ordenacao.onchange = aplicarFiltros;
+
+limparFiltros.onclick = () => {
+  busca.value = "";
+  filtroIdioma.value = "";
+  filtroDuracao.value = "";
+  filtroNota.value = "";
+  filtroVotos.value = "";
+  filtroPopularidade.value = "";
+  ordenacao.value = "";
+  generoAtual = null;
+  marcarGeneroAtivo("Todos");
+  aplicarFiltros();
+};
+
 function aplicarFiltros(){
-  let lista = filmes;
+  let lista = [...filmes];
 
+  /* gênero */
   if(generoAtual){
-    lista = lista.filter(f=>
-      (f.generos||[]).includes(generoAtual)
-    );
+    lista = lista.filter(f => (f.generos || []).includes(generoAtual));
   }
 
-  const termo = busca.value.toLowerCase();
+  /* busca */
+  const termo = busca.value.trim().toLowerCase();
   if(termo){
-    lista = lista.filter(f=>
-      f.titulo.toLowerCase().includes(termo)
+    lista = lista.filter(f =>
+      (f.titulo || "").toLowerCase().includes(termo)
     );
   }
 
-  visiveis = lista.slice(0,200); // LIMITE PARA TV
+  /* idioma */
+  const idioma = filtroIdioma.value;
+  if(idioma){
+    lista = lista.filter(f => textoSeguro(f.idioma) === idioma);
+  }
+
+  /* duração */
+  const duracao = filtroDuracao.value;
+  if(duracao){
+    lista = lista.filter(f => {
+      const d = numeroSeguro(f.duracao);
+
+      if(duracao === "ate90") return d > 0 && d <= 90;
+      if(duracao === "90a120") return d > 90 && d <= 120;
+      if(duracao === "120a150") return d > 120 && d <= 150;
+      if(duracao === "mais150") return d > 150;
+
+      return true;
+    });
+  }
+
+  /* nota */
+  const notaMin = numeroSeguro(filtroNota.value);
+  if(notaMin){
+    lista = lista.filter(f => numeroSeguro(f.nota) >= notaMin);
+  }
+
+  /* votos */
+  const votosMin = numeroSeguro(filtroVotos.value);
+  if(votosMin){
+    lista = lista.filter(f => numeroSeguro(f.votos) >= votosMin);
+  }
+
+  /* popularidade */
+  const popMin = numeroSeguro(filtroPopularidade.value);
+  if(popMin){
+    lista = lista.filter(f => numeroSeguro(f.popularidade) >= popMin);
+  }
+
+  /* ordenação */
+  lista = ordenarLista(lista);
+
+  visiveis = lista.slice(0, 500);
   pagina = 0;
   grid.innerHTML = "";
   renderPagina();
+  atualizarInfo();
+}
+
+/* ===============================
+   INFO DE RESULTADOS
+================================ */
+function atualizarInfo(){
+  const total = visiveis.length;
+  infoResultados.textContent = `${total} filme(s) encontrado(s)`;
 }
 
 /* ===============================
    CONTROLE DE SETAS (TV)
 ================================ */
-document.addEventListener("keydown",e=>{
+document.addEventListener("keydown", e => {
   const foco = document.activeElement;
   if(!foco) return;
 
-  // ENTER
-  if(e.key==="Enter"){
+  if(e.key === "Enter" && typeof foco.click === "function"){
     foco.click();
   }
 
-  // ↓ DA BARRA → GRID
-  if(e.key==="ArrowDown" && foco.classList.contains("genero")){
+  if(e.key === "ArrowDown" && foco.classList.contains("genero")){
     const primeiroCard = document.querySelector(".card");
     if(primeiroCard){
       primeiroCard.focus();
@@ -269,11 +689,10 @@ document.addEventListener("keydown",e=>{
     }
   }
 
-  // ↑ DO GRID → BARRA
-  if(e.key==="ArrowUp" && foco.classList.contains("card")){
-    const primeiroGenero = document.querySelector(".genero");
-    if(primeiroGenero){
-      primeiroGenero.focus();
+  if(e.key === "ArrowUp" && foco.classList.contains("card")){
+    const generoAtivo = document.querySelector(".genero.ativo") || document.querySelector(".genero");
+    if(generoAtivo){
+      generoAtivo.focus();
       e.preventDefault();
     }
   }
