@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 Meus Filmes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #eee;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* PLAYER */
+  #player-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    flex-direction: column;
+  }
+  #player-overlay.ativo { display: flex; }
+
+  #player-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.8);
+  }
+  #player-title { font-size: 1.1rem; font-weight: 600; flex: 1; }
+  #btn-fechar {
+    background: #e53935;
+    border: none;
+    color: #fff;
+    font-size: 1.4rem;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  #player-frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+  }
+
+  /* CABEÇALHO */
+  header {
+    padding: 24px 20px 12px;
+    background: linear-gradient(180deg, #111 0%, transparent 100%);
+  }
+  header h1 { font-size: 1.6rem; letter-spacing: 1px; }
+  header span { color: #e53935; }
+
+  /* BUSCA */
+  #busca-wrap {
+    padding: 12px 20px;
+    position: sticky;
+    top: 0;
+    background: #0a0a0f;
+    z-index: 10;
+  }
+  #busca {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 30px;
+    border: 2px solid #333;
+    background: #1a1a2e;
+    color: #eee;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  #busca:focus { border-color: #e53935; }
+
+  /* CONTADOR */
+  #contador {
+    padding: 4px 20px 10px;
+    font-size: 0.82rem;
+    color: #777;
+  }
+
+  /* GRADE */
+  #grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+    padding: 0 20px 40px;
+  }
+
+  .card {
+    background: #16213e;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color .15s, transform .15s;
+    /* navegação por controle remoto */
+  }
+  .card:focus, .card:hover {
+    border-color: #e53935;
+    transform: scale(1.04);
+    outline: none;
+  }
+
+  .card-thumb {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: #0f3460;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+  }
+
+  .card-info {
+    padding: 10px;
+  }
+  .card-titulo {
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-ano {
+    font-size: 0.72rem;
+    color: #e53935;
+    margin-top: 4px;
+  }
+
+  /* TV: remover hover e usar focus */
+  @media (hover: none) {
+    .card:hover { transform: none; border-color: transparent; }
+    .card:focus { transform: scale(1.06); border-color: #e53935; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PLAYER -->
+<div id="player-overlay">
+  <div id="player-header">
+    <button id="btn-fechar" onclick="fecharPlayer()" title="Fechar">✕</button>
+    <div id="player-title"></div>
+  </div>
+  <iframe id="player-frame" allowfullscreen allow="autoplay"></iframe>
+</div>
+
+<!-- INTERFACE -->
+<header>
+  <h1>🎬 Meus <span>Filmes</span></h1>
+</header>
+
+<div id="busca-wrap">
+  <input id="busca" type="search" placeholder="🔍 Buscar filme..." oninput="filtrar()" />
+</div>
+<div id="contador"></div>
+<div id="grade"></div>
+
+<script>
+// ── DADOS ─────────────────────────────────────────────────────────────────────
+const filmes = [
+  {"id":"1lLVp6bUmyOfe7YzS611QgLDAhiznxmn2","titulo":"A Identidade Bourne","ano":"2002","player":"https://drive.google.com/file/d/1lLVp6bUmyOfe7YzS611QgLDAhiznxmn2/preview"},
+  {"id":"1ie4AjD3S4S0FKrEqLw9DX7e3Wz7lyza7","titulo":"Lições de Liberdade","ano":"2025","player":"https://drive.google.com/file/d/1ie4AjD3S4S0FKrEqLw9DX7e3Wz7lyza7/preview"},
+  {"id":"1ANEQZKCJdXCCsF5APTOzi2D4kMDISEPp","titulo":"Largo Winch o Preco do Dinheiro","ano":"2024","player":"https://drive.google.com/file/d/1ANEQZKCJdXCCsF5APTOzi2D4kMDISEPp/preview"},
+  {"id":"1tll2aa4TLpGNxxrlPgUtX4u7zp9eaSmA","titulo":"O Contador 1","ano":"2016","player":"https://drive.google.com/file/d/1tll2aa4TLpGNxxrlPgUtX4u7zp9eaSmA/preview"},
+  {"id":"1-EeLiiIK5ORuhcKA1DOZinzcSClhb8Dj","titulo":"Laços de Sangue","ano":"2022","player":"https://drive.google.com/file/d/1-EeLiiIK5ORuhcKA1DOZinzcSClhb8Dj/preview"},
+  {"id":"1pI0jFvN94ul-eQqQ9TrrDEK43ZBdO96R","titulo":"Kraven O Caçador","ano":"2024","player":"https://drive.google.com/file/d/1pI0jFvN94ul-eQqQ9TrrDEK43ZBdO96R/preview"},
+  {"id":"1Iq8g10FlvURfawPfJYBkvnX4qcjzZetU","titulo":"Imparável","ano":"2025","player":"https://drive.google.com/file/d/1Iq8g10FlvURfawPfJYBkvnX4qcjzZetU/preview"},
+  {"id":"1Ffdy9n8joWj_u17aOnbUY7iN_UEmiYFg","titulo":"Henry e Klauss Mestres da Mágica","ano":"2025","player":"https://drive.google.com/file/d/1Ffdy9n8joWj_u17aOnbUY7iN_UEmiYFg/preview"},
+  {"id":"142HfBHQDMpGVKK05Sv4X0RyUg0cjzDi4","titulo":"Rango","ano":"2011","player":"https://drive.google.com/file/d/142HfBHQDMpGVKK05Sv4X0RyUg0cjzDi4/preview"},
+  {"id":"18vhpd-HO6xNeoy61cJIiVCxX_OgKrB__","titulo":"O Conde","ano":"2023","player":"https://drive.google.com/file/d/18vhpd-HO6xNeoy61cJIiVCxX_OgKrB__/preview"},
+  {"id":"1GA10L_Vfm7aWRPYLslKcOGhymCHO8UyF","titulo":"Rampage 2 A Punição","ano":"2015","player":"https://drive.google.com/file/d/1GA10L_Vfm7aWRPYLslKcOGhymCHO8UyF/preview"},
+  {"id":"1-0LXdehy7DHtAqbzTWjayDf-4qrU7tA9","titulo":"Rampage","ano":"2009","player":"https://drive.google.com/file/d/1-0LXdehy7DHtAqbzTWjayDf-4qrU7tA9/preview"},
+  {"id":"1cdzt-sHDxMrWOu0GWxYg4HhVPkN5Kow5","titulo":"Rambo Até o Fim","ano":"2019","player":"https://drive.google.com/file/d/1cdzt-sHDxMrWOu0GWxYg4HhVPkN5Kow5/preview"},
+  {"id":"1PWoFAjA1C7nL3Of32ipvk2lLpZ6y27Sh","titulo":"R.I.P.D.  Agentes do Além","ano":"2013","player":"https://drive.google.com/file/d/1PWoFAjA1C7nL3Of32ipvk2lLpZ6y27Sh/preview"},
+  {"id":"14mdEEFMmlzD25bE3fcjZY2XlHyB1V-C-","titulo":"Racionais MCs Das Ruas de São Paulo Pro Mundo","ano":"2022","player":"https://drive.google.com/file/d/14mdEEFMmlzD25bE3fcjZY2XlHyB1V-C-/preview"},
+  {"id":"1UphWY1NZMsWhPoNpGZ3et164dkK9RdRH","titulo":"Queen & Slim","ano":"2019","player":"https://drive.google.com/file/d/1UphWY1NZMsWhPoNpGZ3et164dkK9RdRH/preview"},
+  {"id":"1MYg3exWM3G-Wn8tD_Rcu-Ol-mbvHxFdx","titulo":"Quando os Sinos Tocam","ano":"2022","player":"https://drive.google.com/file/d/1MYg3exWM3G-Wn8tD_Rcu-Ol-mbvHxFdx/preview"},
+  {"id":"1hR5CX3Hjkc9g2UP5JuVYAOCnmJ-lFgh2","titulo":"Quarto de Guerra","ano":"2015","player":"https://drive.google.com/file/d/1hR5CX3Hjkc9g2UP5JuVYAOCnmJ-lFgh2/preview"},
+  {"id":"11mU7BvbTAZ82tTpLG3Uo_L3kDNLY5Xc8","titulo":"Quando o Sol se Põe","ano":"2020","player":"https://drive.google.com/file/d/11mU7BvbTAZ82tTpLG3Uo_L3kDNLY5Xc8/preview"},
+  {"id":"1hy9c9WnXHwnTLZjVMXYC6ivGtsGW0qYI","titulo":"Pulp Fiction Tempo de Violência","ano":"1994","player":"https://drive.google.com/file/d/1hy9c9WnXHwnTLZjVMXYC6ivGtsGW0qYI/preview"},
+  {"id":"10oQZgp7vMdZ91A7NkN-vzAm3GW2hMrPg","titulo":"Prometheus","ano":"2012","player":"https://drive.google.com/file/d/10oQZgp7vMdZ91A7NkN-vzAm3GW2hMrPg/preview"},
+  {"id":"1Z5ORTpGMxz6RUDMMLxYLKfiK87H1RLax","titulo":"Prometheus (Cópia 2)","ano":"2012","player":"https://drive.google.com/file/d/1Z5ORTpGMxz6RUDMMLxYLKfiK87H1RLax/preview"},
+  {"id":"1SZTfzBM1kRWX9h5u6wrszNYuddZr2iS4","titulo":"Pronto, Falei","ano":"2022","player":"https://drive.google.com/file/d/1SZTfzBM1kRWX9h5u6wrszNYuddZr2iS4/preview"},
+  {"id":"1sfEIS_4VPDbzBYcVOfCU7dgHkvwwZwHh","titulo":"Psicopata Americano","ano":"2000","player":"https://drive.google.com/file/d/1sfEIS_4VPDbzBYcVOfCU7dgHkvwwZwHh/preview"},
+  {"id":"1-VIEyzqUy29nrifXMaSvaaHwyCmCvnB5","titulo":"Procurando Nemo","ano":"2003","player":"https://drive.google.com/file/d/1-VIEyzqUy29nrifXMaSvaaHwyCmCvnB5/preview"},
+  {"id":"1_F4Dyye9BSNx-lqmg6ZavQMdr8Zw-NKY","titulo":"Profile","ano":"2018","player":"https://drive.google.com/file/d/1_F4Dyye9BSNx-lqmg6ZavQMdr8Zw-NKY/preview"},
+  {"id":"1S90gRBJ7xo_DSWOh-ARqW4oE4DTFzocI","titulo":"Projeto Almanaque","ano":"2015","player":"https://drive.google.com/file/d/1S90gRBJ7xo_DSWOh-ARqW4oE4DTFzocI/preview"},
+  {"id":"1qNA5zeQ2Xc2gNX-awySU_4VxanGVnbuA","titulo":"Privacidade Hackeada","ano":"2019","player":"https://drive.google.com/file/d/1qNA5zeQ2Xc2gNX-awySU_4VxanGVnbuA/preview"},
+  {"id":"1fWWEW_OPpRP-67AJ08fojducC6OWug8O","titulo":"Procurando Dory","ano":"2016","player":"https://drive.google.com/file/d/1fWWEW_OPpRP-67AJ08fojducC6OWug8O/preview"},
+  {"id":"1f8QKRWcENEl8yQFWTYwLWFUC7LKDq43v","titulo":"Priscilla A Rainha do Deserto","ano":"1994","player":"https://drive.google.com/file/d/1f8QKRWcENEl8yQFWTYwLWFUC7LKDq43v/preview"},
+  {"id":"1NIN0NaALmghIs6RH_R1tt0YVJRVNVMW4","titulo":"Prenda-me se For Capaz","ano":"2002","player":"https://drive.google.com/file/d/1NIN0NaALmghIs6RH_R1tt0YVJRVNVMW4/preview"},
+  {"id":"15oNpoFPeXF9ieF6UzVYTOPoJtYStvH_d","titulo":"Power Rangers Agora e Sempre","ano":"2023","player":"https://drive.google.com/file/d/15oNpoFPeXF9ieF6UzVYTOPoJtYStvH_d/preview"},
+  {"id":"1yKRXxoKmGQbkooGET0oPSiOhcFn3Azsk","titulo":"Presas no Paraíso","ano":"2019","player":"https://drive.google.com/file/d/1yKRXxoKmGQbkooGET0oPSiOhcFn3Azsk/preview"},
+  {"id":"1WuY-3RrW_00cGDuUxYtGjGaFjuAIht0L","titulo":"Presságio","ano":"2009","player":"https://drive.google.com/file/d/1WuY-3RrW_00cGDuUxYtGjGaFjuAIht0L/preview"},
+  {"id":"10eXnE7aUpQTJQOOEjOxXEmQ3DdK3e4OW","titulo":"Porta Amarela O Cineclube dos Anos 90","ano":"2023","player":"https://drive.google.com/file/d/10eXnE7aUpQTJQOOEjOxXEmQ3DdK3e4OW/preview"},
+  {"id":"1rVfk3Sw9gRXqSR2xegPZquS8vNxoStEU","titulo":"Posto de Combate","ano":"2019","player":"https://drive.google.com/file/d/1rVfk3Sw9gRXqSR2xegPZquS8vNxoStEU/preview"},
+  {"id":"1hzH8uWlLDdPU5hZdL3Ms2_216JR55lSz","titulo":"Power","ano":"2020","player":"https://drive.google.com/file/d/1hzH8uWlLDdPU5hZdL3Ms2_216JR55lSz/preview"},
+  {"id":"1KIzU6l_MhMkpbZFR0-NWVnOVEVCLUofV","titulo":"Predador 2 A Caçada Continua","ano":"1990","player":"https://drive.google.com/file/d/1KIzU6l_MhMkpbZFR0-NWVnOVEVCLUofV/preview"},
+  {"id":"1TdUS35otiJGbp2m01VSEcH_koGaQlmRF","titulo":"Ponto de Inflexão","ano":"2022","player":"https://drive.google.com/file/d/1TdUS35otiJGbp2m01VSEcH_koGaQlmRF/preview"},
+  {"id":"1PuTCZfg61J2uhIm6Y_oMKLopQ96wlwxY","titulo":"Por Toda a Minha Vida","ano":"2021","player":"https://drive.google.com/file/d/1PuTCZfg61J2uhIm6Y_oMKLopQ96wlwxY/preview"},
+  {"id":"1RLGY626O4wWa8h1jHB_s-X1v5__g-zBT","titulo":"Planeta dos Macacos O Confronto","ano":"2014","player":"https://drive.google.com/file/d/1RLGY626O4wWa8h1jHB_s-X1v5__g-zBT/preview"},
+  {"id":"1O0fY-BYPhiz5jtz0xTusXIb-pbaAV4i9","titulo":"Play Dead Nos Bastidores da Morte","ano":"2023","player":"https://drive.google.com/file/d/1O0fY-BYPhiz5jtz0xTusXIb-pbaAV4i9/preview"},
+  {"id":"1K_e4ZZcNpC1yjbvLHWEe6tbpxYjjl5-s","titulo":"Poder Paranormal","ano":"2012","player":"https://drive.google.com/file/d/1K_e4ZZcNpC1yjbvLHWEe6tbpxYjjl5-s/preview"},
+  {"id":"187_Bo1raDt1SCKleGM0wDOzehsDMfeaa","titulo":"Podres de Ricos","ano":"2018","player":"https://drive.google.com/file/d/187_Bo1raDt1SCKleGM0wDOzehsDMfeaa/preview"},
+  {"id":"1OeERqXfg_zekZ6z74_Pw5HOVBXHZiCvR","titulo":"Pesadelo nas Alturas","ano":"2020","player":"https://drive.google.com/file/d/1OeERqXfg_zekZ6z74_Pw5HOVBXHZiCvR/preview"},
+  {"id":"1o45w-_z6K_uVxvareREJu-qO4StAFQ95","titulo":"PIG A Vingança","ano":"2021","player":"https://drive.google.com/file/d/1o45w-_z6K_uVxvareREJu-qO4StAFQ95/preview"},
+  {"id":"1U7ud6qBV7tuu9RurCDninyUywWobVQLP","titulo":"Planeta dos Macacos","ano":"2001","player":"https://drive.google.com/file/d/1U7ud6qBV7tuu9RurCDninyUywWobVQLP/preview"},
+  {"id":"1_el3f5wtYVmPLwMNygCnYBt_k5IssoUO","titulo":"Planeta dos Macacos A Guerra","ano":"2017","player":"https://drive.google.com/file/d/1_el3f5wtYVmPLwMNygCnYBt_k5IssoUO/preview"},
+  {"id":"1jVhhRDakmIoEWpJge8HTkoWBb5tJ1VAX","titulo":"Perseguição na Neve","ano":"2021","player":"https://drive.google.com/file/d/1jVhhRDakmIoEWpJge8HTkoWBb5tJ1VAX/preview"},
+  {"id":"1lM3GHdhH6u9TycDsI4UfOIizVtC--qK9","titulo":"Perseguição Nas Alturas","ano":"2022","player":"https://drive.google.com/file/d/1lM3GHdhH6u9TycDsI4UfOIizVtC--qK9/preview"},
+  {"id":"1iC44y5-_8A3PfTsMhjVOWpFXdOd2YvVp","titulo":"Perseguição ás Bruxa","ano":"2021","player":"https://drive.google.com/file/d/1iC44y5-_8A3PfTsMhjVOWpFXdOd2YvVp/preview"},
+  {"id":"14jSM233uLsR4EoNjdHgE8VuTkGpNxVc0","titulo":"Perseguição em Taipei","ano":"2024","player":"https://drive.google.com/file/d/14jSM233uLsR4EoNjdHgE8VuTkGpNxVc0/preview"},
+  {"id":"1unU9G6MWGw2cuCwPTuk81twvWuIVJsHk","titulo":"Pedido de Amizade","ano":"2018","player":"https://drive.google.com/file/d/1unU9G6MWGw2cuCwPTuk81twvWuIVJsHk/preview"},
+  {"id":"1R0QPP4wdfGGbaBTv1tmLvSGU4LCdfHdc","titulo":"Perdi Meu Corpo","ano":"2019","player":"https://drive.google.com/file/d/1R0QPP4wdfGGbaBTv1tmLvSGU4LCdfHdc/preview"},
+  {"id":"166SROdl9dpnYyHxChi-Mmk3x6PsTswml","titulo":"Perigo na Montanha","ano":"2018","player":"https://drive.google.com/file/d/166SROdl9dpnYyHxChi-Mmk3x6PsTswml/preview"},
+  {"id":"1LIgqVn8ndWbcL22sI7eHEIfnRAv-oRE1","titulo":"Patrulha Canina O Filme","ano":"2021","player":"https://drive.google.com/file/d/1LIgqVn8ndWbcL22sI7eHEIfnRAv-oRE1/preview"},
+  {"id":"1KV4wTw5JF3FQ4Vtex4LPf2TSI7GJunBu","titulo":"Paulo, Apóstolo de Cristo","ano":"2018","player":"https://drive.google.com/file/d/1KV4wTw5JF3FQ4Vtex4LPf2TSI7GJunBu/preview"},
+  {"id":"1WUkk0uz9DE4A2LT8zDqKzcHMHOsOBNuI","titulo":"Pássaro Branco Uma História de Extraordinário","ano":"2024","player":"https://drive.google.com/file/d/1WUkk0uz9DE4A2LT8zDqKzcHMHOsOBNuI/preview"},
+  {"id":"1JKepjs1_Xc88kgyVhEWwcxpl-_HAPOtP","titulo":"Pássaros Amarelos","ano":"2019","player":"https://drive.google.com/file/d/1JKepjs1_Xc88kgyVhEWwcxpl-_HAPOtP/preview"},
+  {"id":"1t1UTEBR81GCsR__4sk1vLNajZimH4S5K","titulo":"Papillon","ano":"2019","player":"https://drive.google.com/file/d/1t1UTEBR81GCsR__4sk1vLNajZimH4S5K/preview"},
+  {"id":"1hQ1OQN4OBDRGBtZ0rB24l7x4F5wiWkfI","titulo":"Parasita","ano":"2020","player":"https://drive.google.com/file/d/1hQ1OQN4OBDRGBtZ0rB24l7x4F5wiWkfI/preview"},
+  {"id":"1Zh0pEbLdsoFshQEBSA2tQFEVz3CdR5Dh","titulo":"Passado Violento","ano":"2021","player":"https://drive.google.com/file/d/1Zh0pEbLdsoFshQEBSA2tQFEVz3CdR5Dh/preview"},
+  {"id":"1Jk2wDloWPfP4q95V_hUEwU_mRkiNMpbz","titulo":"Pânico na Floresta","ano":"2003","player":"https://drive.google.com/file/d/1Jk2wDloWPfP4q95V_hUEwU_mRkiNMpbz/preview"},
+  {"id":"17sDM2Wze_YXeBpjli5gsANe4JOApN16r","titulo":"Pânico na Neve","ano":"2010","player":"https://drive.google.com/file/d/17sDM2Wze_YXeBpjli5gsANe4JOApN16r/preview"},
+  {"id":"18OJVfOS-Pp5Km2Lr-odMIuSE5P-G389c","titulo":"Palmer","ano":"2021","player":"https://drive.google.com/file/d/18OJVfOS-Pp5Km2Lr-odMIuSE5P-G389c/preview"},
+  {"id":"1hqeOeN6YBmJuAbYG0ZrrD4JYkdQGLH2X","titulo":"Pânico","ano":"2022","player":"https://drive.google.com/file/d/1hqeOeN6YBmJuAbYG0ZrrD4JYkdQGLH2X/preview"},
+  {"id":"1v5BFOLwg7G6QBGJfOfAyBvwhmB6Y-eDe","titulo":"Pais da Violência","ano":"2019","player":"https://drive.google.com/file/d/1v5BFOLwg7G6QBGJfOfAyBvwhmB6Y-eDe/preview"},
+  {"id":"1pn5jmxkFxLFPlqB0Jk5RcxCXx5w2OW3S","titulo":"Os Vingadores Guerra Infinita","ano":"2018","player":"https://drive.google.com/file/d/1pn5jmxkFxLFPlqB0Jk5RcxCXx5w2OW3S/preview"},
+  {"id":"1iqg_dkI8FbbDpMgST8-CmziDSsYmsiBJ","titulo":"Os Vingadores Ultimato","ano":"2019","player":"https://drive.google.com/file/d/1iqg_dkI8FbbDpMgST8-CmziDSsYmsiBJ/preview"},
+  {"id":"1yybcrlrMfoh7wAI8IxlD57PXgG05Gy-H","titulo":"Os Vingadores Era de Ultron","ano":"2015","player":"https://drive.google.com/file/d/1yybcrlrMfoh7wAI8IxlD57PXgG05Gy-H/preview"},
+  {"id":"1apTms5CGEJN0kIscl4uvBqXwLug9mt9_","titulo":"Os Três Mosqueteiros","ano":"2011","player":"https://drive.google.com/file/d/1apTms5CGEJN0kIscl4uvBqXwLug9mt9_/preview"},
+  {"id":"1QA0iS2bfCNZKGAJag_-M4Po8rAm1VJeO","titulo":"Os Três Mosqueteiros D'artagnan","ano":"2023","player":"https://drive.google.com/file/d/1QA0iS2bfCNZKGAJag_-M4Po8rAm1VJeO/preview"},
+  {"id":"1DrIDZHzcN38Kmrl466l50F57PecTVQrb","titulo":"Os Vingadores","ano":"2012","player":"https://drive.google.com/file/d/1DrIDZHzcN38Kmrl466l50F57PecTVQrb/preview"},
+  {"id":"1ZXyAxxA_9FtMWki4dolJ3iiXBwd3aitP","titulo":"Os Trapaceiros","ano":"2018","player":"https://drive.google.com/file/d/1ZXyAxxA_9FtMWki4dolJ3iiXBwd3aitP/preview"},
+  {"id":"14RI2J-YyOu11oV8-ixxKM_aPUyb9QDU9","titulo":"Os Segredos da Comuna","ano":"2021","player":"https://drive.google.com/file/d/14RI2J-YyOu11oV8-ixxKM_aPUyb9QDU9/preview"},
+  {"id":"1HcChUnzhYf_gCkb5SmfQQ8-HSVBp_MiF","titulo":"Os Segredos de Madame Claude","ano":"2021","player":"https://drive.google.com/file/d/1HcChUnzhYf_gCkb5SmfQQ8-HSVBp_MiF/preview"},
+  {"id":"1NDMKhd1A97bW5Xy0uSIFWwXq-fn3iB8F","titulo":"Os Sem Floresta","ano":"2006","player":"https://drive.google.com/file/d/1NDMKhd1A97bW5Xy0uSIFWwXq-fn3iB8F/preview"},
+  {"id":"1lk-JZSGR-u3_EKuqFASbmgyYJuhq4B6o","titulo":"Os Cavaleiros do Zodíaco Saint Seya","ano":"2023","player":"https://drive.google.com/file/d/1lk-JZSGR-u3_EKuqFASbmgyYJuhq4B6o/preview"},
+  {"id":"1yokE_yA3J0B5FkMgIvS_vEY488PeohjP","titulo":"Os Domésticos","ano":"2018","player":"https://drive.google.com/file/d/1yokE_yA3J0B5FkMgIvS_vEY488PeohjP/preview"},
+  {"id":"1CL2e7iV8z267cEAib3-Ye6ZJeqpH4zuK","titulo":"Os Intocáveis","ano":"1987","player":"https://drive.google.com/file/d/1CL2e7iV8z267cEAib3-Ye6ZJeqpH4zuK/preview"},
+  {"id":"1Jr2gH7PmQAvBsmTk1c4WiUDzhVkb7Az3","titulo":"Os Cavaleiros do Zodíaco 4 - Os Guerreiros do Armagedon","ano":"1989","player":"https://drive.google.com/file/d/1Jr2gH7PmQAvBsmTk1c4WiUDzhVkb7Az3/preview"},
+  {"id":"1EmwfpXFv5a5ylMTKRdgFoJtaLC2Lul_j","titulo":"Os Cavaleiros do Zodíaco 5 - Prólogo do Céu","ano":"2004","player":"https://drive.google.com/file/d/1EmwfpXFv5a5ylMTKRdgFoJtaLC2Lul_j/preview"},
+  {"id":"1f1aW5TwM6l6Jg-K6hG4ZOMHvskcXR-Bv","titulo":"Os Cavaleiros do Zodíaco 3 - A Lenda dos Defensores de Atena","ano":"1988","player":"https://drive.google.com/file/d/1f1aW5TwM6l6Jg-K6hG4ZOMHvskcXR-Bv/preview"},
+  {"id":"1JtzzDVJnkbMYMqc6AmCeq4Aiy7Ea4s0G","titulo":"Os Cavaleiros do Zodíaco 2 - A Grande Batalha dos Deuses","ano":"1988","player":"https://drive.google.com/file/d/1JtzzDVJnkbMYMqc6AmCeq4Aiy7Ea4s0G/preview"},
+  {"id":"1Ik6FmMd77543-bX_On0QCzkti70dkAMC","titulo":"Os Cavaleiros do Zodíaco 1 - O Santo Guerreiro","ano":"1987","player":"https://drive.google.com/file/d/1Ik6FmMd77543-bX_On0QCzkti70dkAMC/preview"},
+  {"id":"1oMt2GgXr675CNkTMqqRoiwOGFOYQM8NF","titulo":"O Rei Leão","ano":"2019","player":"https://drive.google.com/file/d/1oMt2GgXr675CNkTMqqRoiwOGFOYQM8NF/preview"},
+  {"id":"1pD0ps2sAJ3lQCdJJkU6kGtotW814V6D_","titulo":"O Rei Macaco A Lenda Começa","ano":"2022","player":"https://drive.google.com/file/d/1pD0ps2sAJ3lQCdJJkU6kGtotW814V6D_/preview"},
+  {"id":"101UNlF9e7vGsr8jVEHa3yw5YInFzNmHD","titulo":"O Ritual","ano":"2018","player":"https://drive.google.com/file/d/101UNlF9e7vGsr8jVEHa3yw5YInFzNmHD/preview"},
+  {"id":"1qKS-CR2j-KTyzWyp1zNK9rTUDPgWPqZD","titulo":"O Roubo do Século","ano":"2020","player":"https://drive.google.com/file/d/1qKS-CR2j-KTyzWyp1zNK9rTUDPgWPqZD/preview"},
+  {"id":"1PQHTvVlPnflG9ziUdZdukpqq2ky6qVPH","titulo":"O Segredo de Marrowbone","ano":"2018","player":"https://drive.google.com/file/d/1PQHTvVlPnflG9ziUdZdukpqq2ky6qVPH/preview"},
+  {"id":"15Xy-CCvr8gp_ZhdHA_rgCZjvTBWFJvHy","titulo":"O Segredo dos Seus Olhos","ano":"2009","player":"https://drive.google.com/file/d/15Xy-CCvr8gp_ZhdHA_rgCZjvTBWFJvHy/preview"},
+  {"id":"12lNhL_KYSmpLSzaroQ1Yv9jLpwyE4_T_","titulo":"O Semideus","ano":"2021","player":"https://drive.google.com/file/d/12lNhL_KYSmpLSzaroQ1Yv9jLpwyE4_T_/preview"},
+  {"id":"1JKe6iWSCpK_IKebVn0KXDTX3yS33pyTB","titulo":"O Senhor dos Anéis A Guerra dos Rohirrim","ano":"2025","player":"https://drive.google.com/file/d/1JKe6iWSCpK_IKebVn0KXDTX3yS33pyTB/preview"},
+  {"id":"1NN2uMbkwQMjfKJyNFu0IYPyid2AR9iSs","titulo":"O Sequestro","ano":"2023","player":"https://drive.google.com/file/d/1NN2uMbkwQMjfKJyNFu0IYPyid2AR9iSs/preview"},
+  {"id":"1FGsZgjTAT3Vv1p_2-znb_Vdtpyy_1DJO","titulo":"O Sexto Sentido","ano":"1999","player":"https://drive.google.com/file/d/1FGsZgjTAT3Vv1p_2-znb_Vdtpyy_1DJO/preview"},
+  {"id":"1n0oRMu1eqAPbjyGQ2Z4PrCsiYhcy0FbV","titulo":"O Silêncio dos Inocentes","ano":"1991","player":"https://drive.google.com/file/d/1n0oRMu1eqAPbjyGQ2Z4PrCsiYhcy0FbV/preview"},
+  {"id":"1Ee8avMjoWggPBmnWpl2CaBg_s1LQuFk2","titulo":"O Simpsons O Filme","ano":"2007","player":"https://drive.google.com/file/d/1Ee8avMjoWggPBmnWpl2CaBg_s1LQuFk2/preview"},
+  {"id":"1BSf07JjenuqgPAPp-E4yjbC9BdmKfy1l","titulo":"O Terminal","ano":"2004","player":"https://drive.google.com/file/d/1BSf07JjenuqgPAPp-E4yjbC9BdmKfy1l/preview"},
+  {"id":"1sJDGVfcCM2s9cxChDUYFsHKiNzNdgCnx","titulo":"O Troll da Montanha","ano":"2022","player":"https://drive.google.com/file/d/1sJDGVfcCM2s9cxChDUYFsHKiNzNdgCnx/preview"}
+];
+
+// ── EMOJIS POR GÊNERO APROXIMADO ──────────────────────────────────────────────
+function emoji(titulo) {
+  const t = titulo.toLowerCase();
+  if (/vingadores|homem|spider|batman|capitão|thor|hulk|superman|herói|super/.test(t)) return '🦸';
+  if (/terror|pânico|medo|horror|bruxa|sombra|ritual|marrowbone/.test(t)) return '👻';
+  if (/guerra|batalha|combate|soldado|militar|predador|rambo/.test(t)) return '⚔️';
+  if (/nemo|dory|rango|leão|floresta|macacos|patrulha|domésticos/.test(t)) return '🐾';
+  if (/parasita|silêncio|psicopata|assassin|crime|roubo|sequestro/.test(t)) return '🔪';
+  if (/bourne|caçador|perseguição|agentes|imparável|vingança/.test(t)) return '🎯';
+  if (/ficção|prometheus|planeta|alien|sci/.test(t)) return '🚀';
+  if (/pulp|priscilla|simpsons|racionais/.test(t)) return '🎭';
+  if (/amor|vida|liberdade|palmer|por toda/.test(t)) return '❤️';
+  return '🎬';
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+const grade = document.getElementById('grade');
+const contador = document.getElementById('contador');
+
+function renderizar(lista) {
+  grade.innerHTML = '';
+  contador.textContent = `${lista.length} filme${lista.length !== 1 ? 's' : ''}`;
+  lista.forEach((f, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.tabIndex = 0;
+    card.innerHTML = `
+      <div class="card-thumb">${emoji(f.titulo)}</div>
+      <div class="card-info">
+        <div class="card-titulo">${f.titulo}</div>
+        <div class="card-ano">${f.ano}</div>
+      </div>`;
+    card.onclick = () => abrirPlayer(f);
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') abrirPlayer(f); };
+    grade.appendChild(card);
+  });
+}
+
+function filtrar() {
+  const q = document.getElementById('busca').value.toLowerCase().trim();
+  const resultado = q ? filmes.filter(f => f.titulo.toLowerCase().includes(q) || f.ano.includes(q)) : filmes;
+  renderizar(resultado);
+}
+
+// ── PLAYER ────────────────────────────────────────────────────────────────────
+function abrirPlayer(f) {
+  document.getElementById('player-title').textContent = `${f.titulo} (${f.ano})`;
+  document.getElementById('player-frame').src = f.player;
+  document.getElementById('player-overlay').classList.add('ativo');
+}
+
+function fecharPlayer() {
+  document.getElementById('player-frame').src = '';
+  document.getElementById('player-overlay').classList.remove('ativo');
+}
+
+// fechar com ESC (TVs com controle)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') fecharPlayer();
+  if (e.key === 'Backspace' && document.getElementById('player-overlay').classList.contains('ativo')) fecharPlayer();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderizar(filmes);
+</script>
+</body>
+</html>
