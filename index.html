@@ -1,339 +1,408 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎬 Meus Filmes</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🎬 Filmoteca</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080d;--s:#0f1018;--s2:#181924;--border:#1e1f33;
+  --amber:#f5a623;--green:#22c55e;--red:#ef4444;
+  --text:#eef0f8;--muted:#5a5c78;--radius:10px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
 
-  body {
-    background: #0a0a0f;
-    color: #eee;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    min-height: 100vh;
-  }
+/* HEADER */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(7,8,13,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:16px 40px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:3px;color:var(--amber);white-space:nowrap}
+.logo span{color:var(--text);opacity:.4;font-size:.9rem;letter-spacing:1px;margin-left:8px;font-family:'Inter',sans-serif;font-weight:300}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  padding:8px 12px;
+}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-size:.82rem;width:180px}
+.search-box input::placeholder{color:var(--muted)}
+.badge-count{
+  background:var(--s2);border-radius:20px;padding:4px 12px;
+  font-size:.72rem;color:var(--amber);border:1px solid rgba(245,166,35,.25);white-space:nowrap;
+}
 
-  /* PLAYER */
-  #player-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #000;
-    z-index: 1000;
-    flex-direction: column;
-  }
-  #player-overlay.ativo { display: flex; }
+/* TMDB BAR */
+.tmdb-bar{
+  background:linear-gradient(90deg,#0d0d1f,#111128);
+  border-bottom:1px solid #1a1a35;
+  padding:10px 40px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.tmdb-bar label{font-size:.7rem;color:var(--muted);letter-spacing:.5px;white-space:nowrap}
+.tmdb-bar input{
+  background:var(--s2);border:1px solid var(--border);border-radius:6px;
+  padding:6px 12px;color:var(--text);font-size:.78rem;width:240px;outline:none;
+}
+.tmdb-bar input:focus{border-color:var(--amber)}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border-radius:6px;border:none;
+  font-size:.78rem;font-weight:700;cursor:pointer;letter-spacing:.3px;
+  transition:opacity .15s,transform .1s;
+}
+.btn:hover:not(:disabled){opacity:.85;transform:scale(1.02)}
+.btn:disabled{opacity:.3;cursor:default}
+.btn-amber{background:var(--amber);color:#000}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.progress-wrap{flex:1;min-width:100px;height:4px;background:var(--s2);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),#fbbf24);width:0%;transition:width .3s;border-radius:2px}
+.tmdb-status{font-size:.7rem;color:var(--muted);white-space:nowrap}
 
-  #player-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 20px;
-    background: rgba(0,0,0,0.8);
-  }
-  #player-title { font-size: 1.1rem; font-weight: 600; flex: 1; }
-  #btn-fechar {
-    background: #e53935;
-    border: none;
-    color: #fff;
-    font-size: 1.4rem;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
+/* FILTERS */
+.filters{
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:14px 40px 4px;
+}
+.fbtn{
+  background:var(--s);border:1px solid var(--border);border-radius:20px;
+  padding:4px 12px;font-size:.7rem;color:var(--muted);cursor:pointer;
+  transition:all .12s;letter-spacing:.3px;
+}
+.fbtn:hover,.fbtn.on{background:var(--amber);color:#000;border-color:var(--amber);font-weight:700}
 
-  #player-frame {
-    flex: 1;
-    width: 100%;
-    border: none;
-  }
+/* GRID */
+main{padding:18px 40px 60px}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:16px;
+}
 
-  /* CABEÇALHO */
-  header {
-    padding: 24px 20px 12px;
-    background: linear-gradient(180deg, #111 0%, transparent 100%);
-  }
-  header h1 { font-size: 1.6rem; letter-spacing: 1px; }
-  header span { color: #e53935; }
+/* CARD */
+.card{
+  border-radius:var(--radius);overflow:hidden;cursor:pointer;
+  outline:none;border:2px solid transparent;background:var(--s);
+  transition:border-color .18s,box-shadow .18s,transform .18s;
+}
+.card:hover,.card:focus{
+  border-color:var(--amber);
+  box-shadow:0 0 0 2px rgba(245,166,35,.4),0 8px 30px rgba(245,166,35,.2);
+  transform:scale(1.05);z-index:5;position:relative;
+}
+.poster{width:100%;aspect-ratio:2/3;background:var(--s2);position:relative;overflow:hidden}
+.poster img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
+.poster img.loaded{opacity:1}
+.poster-placeholder{
+  width:100%;height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center;
+  background:linear-gradient(160deg,var(--s2),var(--bg));
+}
+.poster-placeholder-icon{font-size:2.2rem;opacity:.2}
+.poster-placeholder-title{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:1px;opacity:.55;line-height:1.2}
+.qual-badge{
+  position:absolute;top:6px;right:6px;
+  background:rgba(0,0,0,.7);border:1px solid rgba(245,166,35,.35);
+  color:var(--amber);font-size:.55rem;font-weight:700;
+  padding:2px 5px;border-radius:4px;letter-spacing:.8px;
+}
+.nota-badge{
+  position:absolute;bottom:6px;left:6px;
+  background:rgba(0,0,0,.75);border-radius:4px;
+  padding:2px 6px;font-size:.6rem;color:#fbbf24;font-weight:700;
+}
+.card-footer{
+  padding:8px 10px 10px;
+  display:flex;align-items:center;gap:6px;
+}
+.card-title{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.play-btn{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--amber);color:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;flex-shrink:0;
+  transition:background .12s;
+}
+.card:hover .play-btn,.card:focus .play-btn{background:#fff}
 
-  /* BUSCA */
-  #busca-wrap {
-    padding: 12px 20px;
-    position: sticky;
-    top: 0;
-    background: #0a0a0f;
-    z-index: 10;
-  }
-  #busca {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 30px;
-    border: 2px solid #333;
-    background: #1a1a2e;
-    color: #eee;
-    font-size: 1rem;
-    outline: none;
-    transition: border-color .2s;
-  }
-  #busca:focus { border-color: #e53935; }
+/* PLAYER */
+.player-ov{display:none;position:fixed;inset:0;background:#000;z-index:200;flex-direction:column}
+.player-ov.on{display:flex}
+.player-bar{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 18px;background:#000;border-bottom:1px solid #111;flex-shrink:0;
+}
+.player-thumb{width:32px;height:48px;border-radius:4px;object-fit:cover;flex-shrink:0}
+.player-thumb-ph{width:32px;height:48px;border-radius:4px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.player-info{flex:1;min-width:0}
+.player-title{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-meta{font-size:.65rem;color:var(--muted);margin-top:1px}
+.player-close{background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;font-size:.78rem;cursor:pointer}
+.player-close:hover{background:#222}
+.iframe-wrap{flex:1;display:flex}
+.iframe-wrap iframe{width:100%;height:100%;border:none}
+.fallback{
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;flex:1;text-align:center;padding:40px;
+}
+.fallback.on{display:flex}
+.fallback h2{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px}
+.fallback p{color:var(--muted);max-width:360px;line-height:1.6;font-size:.82rem}
+.btn-drive{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 24px;background:var(--amber);color:#000;
+  border-radius:8px;font-size:.9rem;font-weight:700;text-decoration:none;
+}
 
-  /* CONTADOR */
-  #contador {
-    padding: 4px 20px 10px;
-    font-size: 0.82rem;
-    color: #777;
-  }
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:80px 20px;text-align:center;color:var(--muted)}
+.empty-icon{font-size:3rem;opacity:.2}
+.empty h3{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px}
 
-  /* GRADE */
-  #grade {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 14px;
-    padding: 0 20px 40px;
-  }
-
-  .card {
-    background: #16213e;
-    border-radius: 10px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color .15s, transform .15s;
-    /* navegação por controle remoto */
-  }
-  .card:focus, .card:hover {
-    border-color: #e53935;
-    transform: scale(1.04);
-    outline: none;
-  }
-
-  .card-thumb {
-    width: 100%;
-    aspect-ratio: 2/3;
-    background: #0f3460;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-  }
-
-  .card-info {
-    padding: 10px;
-  }
-  .card-titulo {
-    font-size: 0.82rem;
-    font-weight: 600;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .card-ano {
-    font-size: 0.72rem;
-    color: #e53935;
-    margin-top: 4px;
-  }
-
-  /* TV: remover hover e usar focus */
-  @media (hover: none) {
-    .card:hover { transform: none; border-color: transparent; }
-    .card:focus { transform: scale(1.06); border-color: #e53935; }
-  }
+@media(min-width:1400px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px}
+}
+@media(min-width:1920px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:24px}
+  header,.tmdb-bar,.filters,main{padding-left:60px;padding-right:60px}
+}
 </style>
 </head>
 <body>
 
-<!-- PLAYER -->
-<div id="player-overlay">
-  <div id="player-header">
-    <button id="btn-fechar" onclick="fecharPlayer()" title="Fechar">✕</button>
-    <div id="player-title"></div>
-  </div>
-  <iframe id="player-frame" allowfullscreen allow="autoplay"></iframe>
-</div>
-
-<!-- INTERFACE -->
 <header>
-  <h1>🎬 Meus <span>Filmes</span></h1>
+  <div class="logo">🎬 Filmoteca <span>Drive · 920 filmes</span></div>
+  <div class="header-right">
+    <div class="search-box">
+      <span style="color:var(--muted)">🔍</span>
+      <input type="text" id="srch" placeholder="Buscar filme..." oninput="applyFilters()"/>
+    </div>
+    <div class="badge-count" id="badgeCount">920 filmes</div>
+  </div>
 </header>
 
-<div id="busca-wrap">
-  <input id="busca" type="search" placeholder="🔍 Buscar filme..." oninput="filtrar()" />
+<div class="tmdb-bar">
+  <label>TMDB API:</label>
+  <input type="text" id="tmdbKey" value="9a9a8c6e53bf1e6c407b689e729a43c9" placeholder="Cole sua chave TMDB..."/>
+  <button class="btn btn-amber" id="btnLoad" onclick="loadAll()">🎭 Carregar capas e info</button>
+  <div class="progress-wrap"><div class="progress-fill" id="pBar"></div></div>
+  <span class="tmdb-status" id="pStatus"></span>
 </div>
-<div id="contador"></div>
-<div id="grade"></div>
+
+<div class="filters" id="filtersBar">
+  <button class="fbtn on" onclick="setGenre('all',this)">Todos</button>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- PLAYER -->
+<div class="player-ov" id="playerOv">
+  <div class="player-bar">
+    <div id="thumbWrap"></div>
+    <div class="player-info">
+      <div class="player-title" id="pTitle"></div>
+      <div class="player-meta" id="pMeta"></div>
+    </div>
+    <span style="background:var(--amber);color:#000;font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1px;flex-shrink:0">1080P · MKV</span>
+    <button class="player-close" id="pClose">✕ Fechar</button>
+  </div>
+  <div class="iframe-wrap"><iframe id="pFrame" allowfullscreen allow="autoplay"></iframe></div>
+  <div class="fallback" id="fallback">
+    <div style="font-size:3rem">🔒</div>
+    <h2>Abrir no Google Drive</h2>
+    <p>Este arquivo requer login. Clique abaixo para assistir diretamente no Google Drive.</p>
+    <a id="fallbackLink" href="#" target="_blank" class="btn-drive">▶ Abrir no Google Drive</a>
+  </div>
+</div>
 
 <script>
-// ── DADOS ─────────────────────────────────────────────────────────────────────
-const filmes = [
-  {"id":"1lLVp6bUmyOfe7YzS611QgLDAhiznxmn2","titulo":"A Identidade Bourne","ano":"2002","player":"https://drive.google.com/file/d/1lLVp6bUmyOfe7YzS611QgLDAhiznxmn2/preview"},
-  {"id":"1ie4AjD3S4S0FKrEqLw9DX7e3Wz7lyza7","titulo":"Lições de Liberdade","ano":"2025","player":"https://drive.google.com/file/d/1ie4AjD3S4S0FKrEqLw9DX7e3Wz7lyza7/preview"},
-  {"id":"1ANEQZKCJdXCCsF5APTOzi2D4kMDISEPp","titulo":"Largo Winch o Preco do Dinheiro","ano":"2024","player":"https://drive.google.com/file/d/1ANEQZKCJdXCCsF5APTOzi2D4kMDISEPp/preview"},
-  {"id":"1tll2aa4TLpGNxxrlPgUtX4u7zp9eaSmA","titulo":"O Contador 1","ano":"2016","player":"https://drive.google.com/file/d/1tll2aa4TLpGNxxrlPgUtX4u7zp9eaSmA/preview"},
-  {"id":"1-EeLiiIK5ORuhcKA1DOZinzcSClhb8Dj","titulo":"Laços de Sangue","ano":"2022","player":"https://drive.google.com/file/d/1-EeLiiIK5ORuhcKA1DOZinzcSClhb8Dj/preview"},
-  {"id":"1pI0jFvN94ul-eQqQ9TrrDEK43ZBdO96R","titulo":"Kraven O Caçador","ano":"2024","player":"https://drive.google.com/file/d/1pI0jFvN94ul-eQqQ9TrrDEK43ZBdO96R/preview"},
-  {"id":"1Iq8g10FlvURfawPfJYBkvnX4qcjzZetU","titulo":"Imparável","ano":"2025","player":"https://drive.google.com/file/d/1Iq8g10FlvURfawPfJYBkvnX4qcjzZetU/preview"},
-  {"id":"1Ffdy9n8joWj_u17aOnbUY7iN_UEmiYFg","titulo":"Henry e Klauss Mestres da Mágica","ano":"2025","player":"https://drive.google.com/file/d/1Ffdy9n8joWj_u17aOnbUY7iN_UEmiYFg/preview"},
-  {"id":"142HfBHQDMpGVKK05Sv4X0RyUg0cjzDi4","titulo":"Rango","ano":"2011","player":"https://drive.google.com/file/d/142HfBHQDMpGVKK05Sv4X0RyUg0cjzDi4/preview"},
-  {"id":"18vhpd-HO6xNeoy61cJIiVCxX_OgKrB__","titulo":"O Conde","ano":"2023","player":"https://drive.google.com/file/d/18vhpd-HO6xNeoy61cJIiVCxX_OgKrB__/preview"},
-  {"id":"1GA10L_Vfm7aWRPYLslKcOGhymCHO8UyF","titulo":"Rampage 2 A Punição","ano":"2015","player":"https://drive.google.com/file/d/1GA10L_Vfm7aWRPYLslKcOGhymCHO8UyF/preview"},
-  {"id":"1-0LXdehy7DHtAqbzTWjayDf-4qrU7tA9","titulo":"Rampage","ano":"2009","player":"https://drive.google.com/file/d/1-0LXdehy7DHtAqbzTWjayDf-4qrU7tA9/preview"},
-  {"id":"1cdzt-sHDxMrWOu0GWxYg4HhVPkN5Kow5","titulo":"Rambo Até o Fim","ano":"2019","player":"https://drive.google.com/file/d/1cdzt-sHDxMrWOu0GWxYg4HhVPkN5Kow5/preview"},
-  {"id":"1PWoFAjA1C7nL3Of32ipvk2lLpZ6y27Sh","titulo":"R.I.P.D.  Agentes do Além","ano":"2013","player":"https://drive.google.com/file/d/1PWoFAjA1C7nL3Of32ipvk2lLpZ6y27Sh/preview"},
-  {"id":"14mdEEFMmlzD25bE3fcjZY2XlHyB1V-C-","titulo":"Racionais MCs Das Ruas de São Paulo Pro Mundo","ano":"2022","player":"https://drive.google.com/file/d/14mdEEFMmlzD25bE3fcjZY2XlHyB1V-C-/preview"},
-  {"id":"1UphWY1NZMsWhPoNpGZ3et164dkK9RdRH","titulo":"Queen & Slim","ano":"2019","player":"https://drive.google.com/file/d/1UphWY1NZMsWhPoNpGZ3et164dkK9RdRH/preview"},
-  {"id":"1MYg3exWM3G-Wn8tD_Rcu-Ol-mbvHxFdx","titulo":"Quando os Sinos Tocam","ano":"2022","player":"https://drive.google.com/file/d/1MYg3exWM3G-Wn8tD_Rcu-Ol-mbvHxFdx/preview"},
-  {"id":"1hR5CX3Hjkc9g2UP5JuVYAOCnmJ-lFgh2","titulo":"Quarto de Guerra","ano":"2015","player":"https://drive.google.com/file/d/1hR5CX3Hjkc9g2UP5JuVYAOCnmJ-lFgh2/preview"},
-  {"id":"11mU7BvbTAZ82tTpLG3Uo_L3kDNLY5Xc8","titulo":"Quando o Sol se Põe","ano":"2020","player":"https://drive.google.com/file/d/11mU7BvbTAZ82tTpLG3Uo_L3kDNLY5Xc8/preview"},
-  {"id":"1hy9c9WnXHwnTLZjVMXYC6ivGtsGW0qYI","titulo":"Pulp Fiction Tempo de Violência","ano":"1994","player":"https://drive.google.com/file/d/1hy9c9WnXHwnTLZjVMXYC6ivGtsGW0qYI/preview"},
-  {"id":"10oQZgp7vMdZ91A7NkN-vzAm3GW2hMrPg","titulo":"Prometheus","ano":"2012","player":"https://drive.google.com/file/d/10oQZgp7vMdZ91A7NkN-vzAm3GW2hMrPg/preview"},
-  {"id":"1Z5ORTpGMxz6RUDMMLxYLKfiK87H1RLax","titulo":"Prometheus (Cópia 2)","ano":"2012","player":"https://drive.google.com/file/d/1Z5ORTpGMxz6RUDMMLxYLKfiK87H1RLax/preview"},
-  {"id":"1SZTfzBM1kRWX9h5u6wrszNYuddZr2iS4","titulo":"Pronto, Falei","ano":"2022","player":"https://drive.google.com/file/d/1SZTfzBM1kRWX9h5u6wrszNYuddZr2iS4/preview"},
-  {"id":"1sfEIS_4VPDbzBYcVOfCU7dgHkvwwZwHh","titulo":"Psicopata Americano","ano":"2000","player":"https://drive.google.com/file/d/1sfEIS_4VPDbzBYcVOfCU7dgHkvwwZwHh/preview"},
-  {"id":"1-VIEyzqUy29nrifXMaSvaaHwyCmCvnB5","titulo":"Procurando Nemo","ano":"2003","player":"https://drive.google.com/file/d/1-VIEyzqUy29nrifXMaSvaaHwyCmCvnB5/preview"},
-  {"id":"1_F4Dyye9BSNx-lqmg6ZavQMdr8Zw-NKY","titulo":"Profile","ano":"2018","player":"https://drive.google.com/file/d/1_F4Dyye9BSNx-lqmg6ZavQMdr8Zw-NKY/preview"},
-  {"id":"1S90gRBJ7xo_DSWOh-ARqW4oE4DTFzocI","titulo":"Projeto Almanaque","ano":"2015","player":"https://drive.google.com/file/d/1S90gRBJ7xo_DSWOh-ARqW4oE4DTFzocI/preview"},
-  {"id":"1qNA5zeQ2Xc2gNX-awySU_4VxanGVnbuA","titulo":"Privacidade Hackeada","ano":"2019","player":"https://drive.google.com/file/d/1qNA5zeQ2Xc2gNX-awySU_4VxanGVnbuA/preview"},
-  {"id":"1fWWEW_OPpRP-67AJ08fojducC6OWug8O","titulo":"Procurando Dory","ano":"2016","player":"https://drive.google.com/file/d/1fWWEW_OPpRP-67AJ08fojducC6OWug8O/preview"},
-  {"id":"1f8QKRWcENEl8yQFWTYwLWFUC7LKDq43v","titulo":"Priscilla A Rainha do Deserto","ano":"1994","player":"https://drive.google.com/file/d/1f8QKRWcENEl8yQFWTYwLWFUC7LKDq43v/preview"},
-  {"id":"1NIN0NaALmghIs6RH_R1tt0YVJRVNVMW4","titulo":"Prenda-me se For Capaz","ano":"2002","player":"https://drive.google.com/file/d/1NIN0NaALmghIs6RH_R1tt0YVJRVNVMW4/preview"},
-  {"id":"15oNpoFPeXF9ieF6UzVYTOPoJtYStvH_d","titulo":"Power Rangers Agora e Sempre","ano":"2023","player":"https://drive.google.com/file/d/15oNpoFPeXF9ieF6UzVYTOPoJtYStvH_d/preview"},
-  {"id":"1yKRXxoKmGQbkooGET0oPSiOhcFn3Azsk","titulo":"Presas no Paraíso","ano":"2019","player":"https://drive.google.com/file/d/1yKRXxoKmGQbkooGET0oPSiOhcFn3Azsk/preview"},
-  {"id":"1WuY-3RrW_00cGDuUxYtGjGaFjuAIht0L","titulo":"Presságio","ano":"2009","player":"https://drive.google.com/file/d/1WuY-3RrW_00cGDuUxYtGjGaFjuAIht0L/preview"},
-  {"id":"10eXnE7aUpQTJQOOEjOxXEmQ3DdK3e4OW","titulo":"Porta Amarela O Cineclube dos Anos 90","ano":"2023","player":"https://drive.google.com/file/d/10eXnE7aUpQTJQOOEjOxXEmQ3DdK3e4OW/preview"},
-  {"id":"1rVfk3Sw9gRXqSR2xegPZquS8vNxoStEU","titulo":"Posto de Combate","ano":"2019","player":"https://drive.google.com/file/d/1rVfk3Sw9gRXqSR2xegPZquS8vNxoStEU/preview"},
-  {"id":"1hzH8uWlLDdPU5hZdL3Ms2_216JR55lSz","titulo":"Power","ano":"2020","player":"https://drive.google.com/file/d/1hzH8uWlLDdPU5hZdL3Ms2_216JR55lSz/preview"},
-  {"id":"1KIzU6l_MhMkpbZFR0-NWVnOVEVCLUofV","titulo":"Predador 2 A Caçada Continua","ano":"1990","player":"https://drive.google.com/file/d/1KIzU6l_MhMkpbZFR0-NWVnOVEVCLUofV/preview"},
-  {"id":"1TdUS35otiJGbp2m01VSEcH_koGaQlmRF","titulo":"Ponto de Inflexão","ano":"2022","player":"https://drive.google.com/file/d/1TdUS35otiJGbp2m01VSEcH_koGaQlmRF/preview"},
-  {"id":"1PuTCZfg61J2uhIm6Y_oMKLopQ96wlwxY","titulo":"Por Toda a Minha Vida","ano":"2021","player":"https://drive.google.com/file/d/1PuTCZfg61J2uhIm6Y_oMKLopQ96wlwxY/preview"},
-  {"id":"1RLGY626O4wWa8h1jHB_s-X1v5__g-zBT","titulo":"Planeta dos Macacos O Confronto","ano":"2014","player":"https://drive.google.com/file/d/1RLGY626O4wWa8h1jHB_s-X1v5__g-zBT/preview"},
-  {"id":"1O0fY-BYPhiz5jtz0xTusXIb-pbaAV4i9","titulo":"Play Dead Nos Bastidores da Morte","ano":"2023","player":"https://drive.google.com/file/d/1O0fY-BYPhiz5jtz0xTusXIb-pbaAV4i9/preview"},
-  {"id":"1K_e4ZZcNpC1yjbvLHWEe6tbpxYjjl5-s","titulo":"Poder Paranormal","ano":"2012","player":"https://drive.google.com/file/d/1K_e4ZZcNpC1yjbvLHWEe6tbpxYjjl5-s/preview"},
-  {"id":"187_Bo1raDt1SCKleGM0wDOzehsDMfeaa","titulo":"Podres de Ricos","ano":"2018","player":"https://drive.google.com/file/d/187_Bo1raDt1SCKleGM0wDOzehsDMfeaa/preview"},
-  {"id":"1OeERqXfg_zekZ6z74_Pw5HOVBXHZiCvR","titulo":"Pesadelo nas Alturas","ano":"2020","player":"https://drive.google.com/file/d/1OeERqXfg_zekZ6z74_Pw5HOVBXHZiCvR/preview"},
-  {"id":"1o45w-_z6K_uVxvareREJu-qO4StAFQ95","titulo":"PIG A Vingança","ano":"2021","player":"https://drive.google.com/file/d/1o45w-_z6K_uVxvareREJu-qO4StAFQ95/preview"},
-  {"id":"1U7ud6qBV7tuu9RurCDninyUywWobVQLP","titulo":"Planeta dos Macacos","ano":"2001","player":"https://drive.google.com/file/d/1U7ud6qBV7tuu9RurCDninyUywWobVQLP/preview"},
-  {"id":"1_el3f5wtYVmPLwMNygCnYBt_k5IssoUO","titulo":"Planeta dos Macacos A Guerra","ano":"2017","player":"https://drive.google.com/file/d/1_el3f5wtYVmPLwMNygCnYBt_k5IssoUO/preview"},
-  {"id":"1jVhhRDakmIoEWpJge8HTkoWBb5tJ1VAX","titulo":"Perseguição na Neve","ano":"2021","player":"https://drive.google.com/file/d/1jVhhRDakmIoEWpJge8HTkoWBb5tJ1VAX/preview"},
-  {"id":"1lM3GHdhH6u9TycDsI4UfOIizVtC--qK9","titulo":"Perseguição Nas Alturas","ano":"2022","player":"https://drive.google.com/file/d/1lM3GHdhH6u9TycDsI4UfOIizVtC--qK9/preview"},
-  {"id":"1iC44y5-_8A3PfTsMhjVOWpFXdOd2YvVp","titulo":"Perseguição ás Bruxa","ano":"2021","player":"https://drive.google.com/file/d/1iC44y5-_8A3PfTsMhjVOWpFXdOd2YvVp/preview"},
-  {"id":"14jSM233uLsR4EoNjdHgE8VuTkGpNxVc0","titulo":"Perseguição em Taipei","ano":"2024","player":"https://drive.google.com/file/d/14jSM233uLsR4EoNjdHgE8VuTkGpNxVc0/preview"},
-  {"id":"1unU9G6MWGw2cuCwPTuk81twvWuIVJsHk","titulo":"Pedido de Amizade","ano":"2018","player":"https://drive.google.com/file/d/1unU9G6MWGw2cuCwPTuk81twvWuIVJsHk/preview"},
-  {"id":"1R0QPP4wdfGGbaBTv1tmLvSGU4LCdfHdc","titulo":"Perdi Meu Corpo","ano":"2019","player":"https://drive.google.com/file/d/1R0QPP4wdfGGbaBTv1tmLvSGU4LCdfHdc/preview"},
-  {"id":"166SROdl9dpnYyHxChi-Mmk3x6PsTswml","titulo":"Perigo na Montanha","ano":"2018","player":"https://drive.google.com/file/d/166SROdl9dpnYyHxChi-Mmk3x6PsTswml/preview"},
-  {"id":"1LIgqVn8ndWbcL22sI7eHEIfnRAv-oRE1","titulo":"Patrulha Canina O Filme","ano":"2021","player":"https://drive.google.com/file/d/1LIgqVn8ndWbcL22sI7eHEIfnRAv-oRE1/preview"},
-  {"id":"1KV4wTw5JF3FQ4Vtex4LPf2TSI7GJunBu","titulo":"Paulo, Apóstolo de Cristo","ano":"2018","player":"https://drive.google.com/file/d/1KV4wTw5JF3FQ4Vtex4LPf2TSI7GJunBu/preview"},
-  {"id":"1WUkk0uz9DE4A2LT8zDqKzcHMHOsOBNuI","titulo":"Pássaro Branco Uma História de Extraordinário","ano":"2024","player":"https://drive.google.com/file/d/1WUkk0uz9DE4A2LT8zDqKzcHMHOsOBNuI/preview"},
-  {"id":"1JKepjs1_Xc88kgyVhEWwcxpl-_HAPOtP","titulo":"Pássaros Amarelos","ano":"2019","player":"https://drive.google.com/file/d/1JKepjs1_Xc88kgyVhEWwcxpl-_HAPOtP/preview"},
-  {"id":"1t1UTEBR81GCsR__4sk1vLNajZimH4S5K","titulo":"Papillon","ano":"2019","player":"https://drive.google.com/file/d/1t1UTEBR81GCsR__4sk1vLNajZimH4S5K/preview"},
-  {"id":"1hQ1OQN4OBDRGBtZ0rB24l7x4F5wiWkfI","titulo":"Parasita","ano":"2020","player":"https://drive.google.com/file/d/1hQ1OQN4OBDRGBtZ0rB24l7x4F5wiWkfI/preview"},
-  {"id":"1Zh0pEbLdsoFshQEBSA2tQFEVz3CdR5Dh","titulo":"Passado Violento","ano":"2021","player":"https://drive.google.com/file/d/1Zh0pEbLdsoFshQEBSA2tQFEVz3CdR5Dh/preview"},
-  {"id":"1Jk2wDloWPfP4q95V_hUEwU_mRkiNMpbz","titulo":"Pânico na Floresta","ano":"2003","player":"https://drive.google.com/file/d/1Jk2wDloWPfP4q95V_hUEwU_mRkiNMpbz/preview"},
-  {"id":"17sDM2Wze_YXeBpjli5gsANe4JOApN16r","titulo":"Pânico na Neve","ano":"2010","player":"https://drive.google.com/file/d/17sDM2Wze_YXeBpjli5gsANe4JOApN16r/preview"},
-  {"id":"18OJVfOS-Pp5Km2Lr-odMIuSE5P-G389c","titulo":"Palmer","ano":"2021","player":"https://drive.google.com/file/d/18OJVfOS-Pp5Km2Lr-odMIuSE5P-G389c/preview"},
-  {"id":"1hqeOeN6YBmJuAbYG0ZrrD4JYkdQGLH2X","titulo":"Pânico","ano":"2022","player":"https://drive.google.com/file/d/1hqeOeN6YBmJuAbYG0ZrrD4JYkdQGLH2X/preview"},
-  {"id":"1v5BFOLwg7G6QBGJfOfAyBvwhmB6Y-eDe","titulo":"Pais da Violência","ano":"2019","player":"https://drive.google.com/file/d/1v5BFOLwg7G6QBGJfOfAyBvwhmB6Y-eDe/preview"},
-  {"id":"1pn5jmxkFxLFPlqB0Jk5RcxCXx5w2OW3S","titulo":"Os Vingadores Guerra Infinita","ano":"2018","player":"https://drive.google.com/file/d/1pn5jmxkFxLFPlqB0Jk5RcxCXx5w2OW3S/preview"},
-  {"id":"1iqg_dkI8FbbDpMgST8-CmziDSsYmsiBJ","titulo":"Os Vingadores Ultimato","ano":"2019","player":"https://drive.google.com/file/d/1iqg_dkI8FbbDpMgST8-CmziDSsYmsiBJ/preview"},
-  {"id":"1yybcrlrMfoh7wAI8IxlD57PXgG05Gy-H","titulo":"Os Vingadores Era de Ultron","ano":"2015","player":"https://drive.google.com/file/d/1yybcrlrMfoh7wAI8IxlD57PXgG05Gy-H/preview"},
-  {"id":"1apTms5CGEJN0kIscl4uvBqXwLug9mt9_","titulo":"Os Três Mosqueteiros","ano":"2011","player":"https://drive.google.com/file/d/1apTms5CGEJN0kIscl4uvBqXwLug9mt9_/preview"},
-  {"id":"1QA0iS2bfCNZKGAJag_-M4Po8rAm1VJeO","titulo":"Os Três Mosqueteiros D'artagnan","ano":"2023","player":"https://drive.google.com/file/d/1QA0iS2bfCNZKGAJag_-M4Po8rAm1VJeO/preview"},
-  {"id":"1DrIDZHzcN38Kmrl466l50F57PecTVQrb","titulo":"Os Vingadores","ano":"2012","player":"https://drive.google.com/file/d/1DrIDZHzcN38Kmrl466l50F57PecTVQrb/preview"},
-  {"id":"1ZXyAxxA_9FtMWki4dolJ3iiXBwd3aitP","titulo":"Os Trapaceiros","ano":"2018","player":"https://drive.google.com/file/d/1ZXyAxxA_9FtMWki4dolJ3iiXBwd3aitP/preview"},
-  {"id":"14RI2J-YyOu11oV8-ixxKM_aPUyb9QDU9","titulo":"Os Segredos da Comuna","ano":"2021","player":"https://drive.google.com/file/d/14RI2J-YyOu11oV8-ixxKM_aPUyb9QDU9/preview"},
-  {"id":"1HcChUnzhYf_gCkb5SmfQQ8-HSVBp_MiF","titulo":"Os Segredos de Madame Claude","ano":"2021","player":"https://drive.google.com/file/d/1HcChUnzhYf_gCkb5SmfQQ8-HSVBp_MiF/preview"},
-  {"id":"1NDMKhd1A97bW5Xy0uSIFWwXq-fn3iB8F","titulo":"Os Sem Floresta","ano":"2006","player":"https://drive.google.com/file/d/1NDMKhd1A97bW5Xy0uSIFWwXq-fn3iB8F/preview"},
-  {"id":"1lk-JZSGR-u3_EKuqFASbmgyYJuhq4B6o","titulo":"Os Cavaleiros do Zodíaco Saint Seya","ano":"2023","player":"https://drive.google.com/file/d/1lk-JZSGR-u3_EKuqFASbmgyYJuhq4B6o/preview"},
-  {"id":"1yokE_yA3J0B5FkMgIvS_vEY488PeohjP","titulo":"Os Domésticos","ano":"2018","player":"https://drive.google.com/file/d/1yokE_yA3J0B5FkMgIvS_vEY488PeohjP/preview"},
-  {"id":"1CL2e7iV8z267cEAib3-Ye6ZJeqpH4zuK","titulo":"Os Intocáveis","ano":"1987","player":"https://drive.google.com/file/d/1CL2e7iV8z267cEAib3-Ye6ZJeqpH4zuK/preview"},
-  {"id":"1Jr2gH7PmQAvBsmTk1c4WiUDzhVkb7Az3","titulo":"Os Cavaleiros do Zodíaco 4 - Os Guerreiros do Armagedon","ano":"1989","player":"https://drive.google.com/file/d/1Jr2gH7PmQAvBsmTk1c4WiUDzhVkb7Az3/preview"},
-  {"id":"1EmwfpXFv5a5ylMTKRdgFoJtaLC2Lul_j","titulo":"Os Cavaleiros do Zodíaco 5 - Prólogo do Céu","ano":"2004","player":"https://drive.google.com/file/d/1EmwfpXFv5a5ylMTKRdgFoJtaLC2Lul_j/preview"},
-  {"id":"1f1aW5TwM6l6Jg-K6hG4ZOMHvskcXR-Bv","titulo":"Os Cavaleiros do Zodíaco 3 - A Lenda dos Defensores de Atena","ano":"1988","player":"https://drive.google.com/file/d/1f1aW5TwM6l6Jg-K6hG4ZOMHvskcXR-Bv/preview"},
-  {"id":"1JtzzDVJnkbMYMqc6AmCeq4Aiy7Ea4s0G","titulo":"Os Cavaleiros do Zodíaco 2 - A Grande Batalha dos Deuses","ano":"1988","player":"https://drive.google.com/file/d/1JtzzDVJnkbMYMqc6AmCeq4Aiy7Ea4s0G/preview"},
-  {"id":"1Ik6FmMd77543-bX_On0QCzkti70dkAMC","titulo":"Os Cavaleiros do Zodíaco 1 - O Santo Guerreiro","ano":"1987","player":"https://drive.google.com/file/d/1Ik6FmMd77543-bX_On0QCzkti70dkAMC/preview"},
-  {"id":"1oMt2GgXr675CNkTMqqRoiwOGFOYQM8NF","titulo":"O Rei Leão","ano":"2019","player":"https://drive.google.com/file/d/1oMt2GgXr675CNkTMqqRoiwOGFOYQM8NF/preview"},
-  {"id":"1pD0ps2sAJ3lQCdJJkU6kGtotW814V6D_","titulo":"O Rei Macaco A Lenda Começa","ano":"2022","player":"https://drive.google.com/file/d/1pD0ps2sAJ3lQCdJJkU6kGtotW814V6D_/preview"},
-  {"id":"101UNlF9e7vGsr8jVEHa3yw5YInFzNmHD","titulo":"O Ritual","ano":"2018","player":"https://drive.google.com/file/d/101UNlF9e7vGsr8jVEHa3yw5YInFzNmHD/preview"},
-  {"id":"1qKS-CR2j-KTyzWyp1zNK9rTUDPgWPqZD","titulo":"O Roubo do Século","ano":"2020","player":"https://drive.google.com/file/d/1qKS-CR2j-KTyzWyp1zNK9rTUDPgWPqZD/preview"},
-  {"id":"1PQHTvVlPnflG9ziUdZdukpqq2ky6qVPH","titulo":"O Segredo de Marrowbone","ano":"2018","player":"https://drive.google.com/file/d/1PQHTvVlPnflG9ziUdZdukpqq2ky6qVPH/preview"},
-  {"id":"15Xy-CCvr8gp_ZhdHA_rgCZjvTBWFJvHy","titulo":"O Segredo dos Seus Olhos","ano":"2009","player":"https://drive.google.com/file/d/15Xy-CCvr8gp_ZhdHA_rgCZjvTBWFJvHy/preview"},
-  {"id":"12lNhL_KYSmpLSzaroQ1Yv9jLpwyE4_T_","titulo":"O Semideus","ano":"2021","player":"https://drive.google.com/file/d/12lNhL_KYSmpLSzaroQ1Yv9jLpwyE4_T_/preview"},
-  {"id":"1JKe6iWSCpK_IKebVn0KXDTX3yS33pyTB","titulo":"O Senhor dos Anéis A Guerra dos Rohirrim","ano":"2025","player":"https://drive.google.com/file/d/1JKe6iWSCpK_IKebVn0KXDTX3yS33pyTB/preview"},
-  {"id":"1NN2uMbkwQMjfKJyNFu0IYPyid2AR9iSs","titulo":"O Sequestro","ano":"2023","player":"https://drive.google.com/file/d/1NN2uMbkwQMjfKJyNFu0IYPyid2AR9iSs/preview"},
-  {"id":"1FGsZgjTAT3Vv1p_2-znb_Vdtpyy_1DJO","titulo":"O Sexto Sentido","ano":"1999","player":"https://drive.google.com/file/d/1FGsZgjTAT3Vv1p_2-znb_Vdtpyy_1DJO/preview"},
-  {"id":"1n0oRMu1eqAPbjyGQ2Z4PrCsiYhcy0FbV","titulo":"O Silêncio dos Inocentes","ano":"1991","player":"https://drive.google.com/file/d/1n0oRMu1eqAPbjyGQ2Z4PrCsiYhcy0FbV/preview"},
-  {"id":"1Ee8avMjoWggPBmnWpl2CaBg_s1LQuFk2","titulo":"O Simpsons O Filme","ano":"2007","player":"https://drive.google.com/file/d/1Ee8avMjoWggPBmnWpl2CaBg_s1LQuFk2/preview"},
-  {"id":"1BSf07JjenuqgPAPp-E4yjbC9BdmKfy1l","titulo":"O Terminal","ano":"2004","player":"https://drive.google.com/file/d/1BSf07JjenuqgPAPp-E4yjbC9BdmKfy1l/preview"},
-  {"id":"1sJDGVfcCM2s9cxChDUYFsHKiNzNdgCnx","titulo":"O Troll da Montanha","ano":"2022","player":"https://drive.google.com/file/d/1sJDGVfcCM2s9cxChDUYFsHKiNzNdgCnx/preview"}
-];
+const RAW = [{"n": "A Identidade Bourne 2002 1080p", "id": "1Th2YFK9uCc3nHH4DkD9RflCQ1zeucTkA"}, {"n": "Lições de Liberdade 2025 1080p", "id": "1roT7DRSAwdrClgM2t_ZabL_TB8nFGk6C"}, {"n": "Largo Winch o Preco do Dinheiro 2024 1080p", "id": "10-mTSLxUrb_PlIlnLaMN38b5vF8A2An7"}, {"n": "O Contador 1 2016 1080p", "id": "1s5LRUnJQMx89huTfYLYmhrg7OZfRSD28"}, {"n": "Laços de Sangue 2022 1080p", "id": "1lFZJyNA7-CKzO6KAVYO8-TDw46fe5Wmq"}, {"n": "Kraven O Caçador 2024 1080p", "id": "1QbheXvu5T_0GfI5tnnmzH6bCbu7QQE6X"}, {"n": "Imparável 2025 1080p", "id": "1lJCSJFkfxHIX3BjKUnoACpjJaYyff_wK"}, {"n": "Henry e Klauss Mestres da Mágica 2025 1080p", "id": "1pfb1NeSAOvH7QUZ7lksfLNgoaVdjo4Si"}, {"n": "Ratatouille 2007 1080p", "id": "1K446lebOzMcV7i197WahKotapRdrSGOS"}, {"n": "Rango 2011 1080p", "id": "1srdp3qznoAw1ipEqyi8KkvkN_FgO8b-r"}, {"n": "O Conde 2023 1080p", "id": "1aV1SxekeHH0g8-ofiXwSnYLRkCTJXZrV"}, {"n": "Rampage 2 A Punição 2015 1080p", "id": "16E-PpWWxtNlHVzidb9_Cf5tHadvRNFCl"}, {"n": "Rampage 2009 1080p", "id": "1ig9Bzb0utpt8-wYJ8GJcEpB9gjIWMjm7"}, {"n": "Rambo Até o Fim 2019 1080p", "id": "1i7mnXSNL-q_D5xJiQ2h_PsP-H0AUqwtj"}, {"n": "R.I.P.D.  Agentes do Além 2013 1080p", "id": "1Swy0nSBkHu2lbXr-YqNNSaOFaWXj2HOw"}, {"n": "Racionais MCs Das Ruas de São Paulo Pro Mundo 2022 1080p", "id": "15freFxw0gz7qj94Y6QhEKRTKcsN2lQlP"}, {"n": "Queen & Slim 2019 1080p", "id": "14PiffW5ktg1c4g4XvRkMlo2AzQaA1sI8"}, {"n": "Quando os Sinos Tocam 2022 1080p", "id": "1fTtVckIfo5KFJ-8t_Avd-h9-5O8N990R"}, {"n": "Quarto de Guerra 2015 1080p", "id": "1y6yBor4q6JucFjKxEahbJ1A4IYoESWNJ"}, {"n": "Quando o Sol se Põe 2020 1080p", "id": "1JPYeHlTOJjp25M9ZjvFDeFwd9wCju7qS"}, {"n": "Pulp Fiction Tempo de Violência 1994 1080p", "id": "1K9SZ_I0adT9CCM2wqOl1zm8UKO-JbNqW"}, {"n": "Prometheus 2012 1080p", "id": "1boNLFSLjmzi0O7wiQ5543K3ObatNBe5h"}, {"n": "Prometheus 2012 1080p (1)", "id": "1GzKijfdNxpF_QPXbPlAuzq223nK8_8LR"}, {"n": "Pronto, Falei 2022 1080p", "id": "1quYQpkdHGceSweKb0WAfzl6Pld7VPJhH"}, {"n": "Psicopata Americano 2000 1080p", "id": "1To0KSU_nGdvSIgz9aolUOizG1CJHINYk"}, {"n": "Procurando Nemo 2003 1080p", "id": "12UIEplr8KlDSv4f0wg11y530zklPfVsD"}, {"n": "Profile 2018 1080p", "id": "1sgTUEBCdEIkqtXP2g7yRe_WqMdwk98UM"}, {"n": "Projeto Almanaque 2015 1080p", "id": "11Mp5pUw6HWdOpa46wgSE_MRvnI8GptNE"}, {"n": "Privacidade Hackeada 2019 1080p", "id": "18e-1SZ2hiUzUlJnzZTp_Zma1IblR9szh"}, {"n": "Procurando Dory 2016 1080p", "id": "1asZ_x1y_1QJJUZBKfdl7jnGIBsTBGjrx"}, {"n": "Priscilla A Rainha do Deserto 1994 1080p", "id": "1NFTcVg_V0EZzCr_tOiZw5dbjxh9JcCf6"}, {"n": "Prenda-me se For Capaz 2002 1080p", "id": "1M5oSr0MCWegkD7ozWT5u_47OLhNfUW1m"}, {"n": "Power Rangers Agora e Sempre 2023 1080p", "id": "13UL6xGzejhq6L9lIAquuS6gFW8DKOmIQ"}, {"n": "Presas no Paraíso 2019 1080p", "id": "1zQ8DItjJSHqJmSXPvfahEGnShNhA0feV"}, {"n": "Presságio 2009 1080p", "id": "1LfzDLZB714yNAMMxNRqB5peR27N_nckb"}, {"n": "Porta Amarela O Cineclube dos Anos 90 2023 1080p", "id": "1VF4klGOUJu6NKW9y4_va6Aza9YX_QLnZ"}, {"n": "Posto de Combate 2019 1080p", "id": "1J-xsyxotL6uAfBJOiMpibFlyEZqK_NAp"}, {"n": "Power 2020 1080p", "id": "1dLm-EbEX4rsn1JwV3g_2SW2SdshLn30Z"}, {"n": "Predador 2 A Caçada Continua 1990 1080p", "id": "1tGZ_AYVopGTTO4FY_hn4iuQq5U5Qfo_-"}, {"n": "Ponto de Inflexão 2022 1080p", "id": "1YAgHDpvFWJVD-Xd6PRGLnPAL67P5RsaS"}, {"n": "Por Toda a Minha Vida 2021 1080p", "id": "1vS6vdScDjz25zAFoEaJsvbDmmReg11KL"}, {"n": "Planeta dos Macacos O Confronto 2014 1080p", "id": "19CF8YwdmHpcQWwwMGaHDSd4lsnD4IzTZ"}, {"n": "Play Dead Nos Bastidores da Morte 2023 1080p", "id": "1ZDuaDkOGsAPKXiXlOc2nuuCsWHDxtgsf"}, {"n": "Poder Paranormal 2012 1080p", "id": "1Dq1AjJz_7BLhxLWB-YBUZ9nJ8v3XtV-H"}, {"n": "Podres de Ricos 2018 1080p", "id": "1hFlQxGwl1Z0mIoccpbXeY9xVT1SDwK5O"}, {"n": "Pesadelo nas Alturas 2020 1080p", "id": "1hoGYCF844EoI5kte3oa2F1F9o7VH2G0W"}, {"n": "PIG A Vingança 2021 1080p", "id": "1-ji4MKHVXk5vfHEQ32XF9y6PyJBHGZ6D"}, {"n": "Planeta dos Macacos 2001 1080p", "id": "1NsH2AaXgwJDueHa0VNCYQ0-9o2VcMnXP"}, {"n": "Planeta dos Macacos A Guerra 2017 1080p", "id": "1MHdhUxVEBgQuvz1L9G4dKXgQ8z8zUZri"}, {"n": "Perseguição na Neve 2021 1080p", "id": "1sD14ungxneU-TLRBjR6evNJWpYGgDQZA"}, {"n": "Perseguição Nas Alturas 2022 1080p", "id": "1ZdoE8Aq_cHzbX_OQbLckr9OmIHB2w0Za"}, {"n": "Perseguição ás Bruxa 2021 1080p", "id": "1LRH8kPGLAf0sm4K5am068fEXZ1pkcxgI"}, {"n": "Perseguição em Taipei 2024 1080p", "id": "19y1PQ9tq9bdWdDDPhZAeOdvcJMy3Lt-P"}, {"n": "Pedido de Amizade 2018 1080p", "id": "1QEN1FuhdRsz6JtiESVzpPbuscT_gmxF8"}, {"n": "Perdi Meu Corpo 2019 1080p", "id": "1oLJ8Or6tggelJ03_xRigUb-Ma8QLDt-w"}, {"n": "Perigo na Montanha 2018 1080p", "id": "1SSf-bZ1wUvRej6LwrvCIJvMi03od2FUv"}, {"n": "Patrulha Canina O Filme 2021 1080p", "id": "1b9NBldfzMctco_DP-8oCIMTR3tDxvNvP"}, {"n": "Paulo, Apóstolo de Cristo 2018 1080p", "id": "1z0CjtC405MqkdvfPVhOsIqapNg7FhM78"}, {"n": "Pássaro Branco Uma História de Extraordinário 2024 1080p", "id": "1JQOKIkHvfGEK48gC0vtN0utchy9k8fr6"}, {"n": "Pássaros Amarelos 2019 1080p", "id": "1io8hsdSz0HRrzlZ1cGpKP_rmu6Ko4_Rg"}, {"n": "Papillon 2019 1080p", "id": "1VWfEo0-jXfvXodGDVlLdsIM63ftglo9L"}, {"n": "Parasita 2020 1080p", "id": "1-SLRvoJQJ_yfWzSDzPNYmPNT4lViytnT"}, {"n": "Passado Violento 2021 1080p", "id": "1n9JfAHWLXW4ZrRUJdEtjq6leHmwcBqrR"}, {"n": "Pânico na Floresta 2003 1080p", "id": "1z35Bbw0ejaYgdWX-4hr8D-SAAze98G9A"}, {"n": "Pânico na Neve 2010 1080p", "id": "1zD60fVgiuZDURZ73_Ocp7tCdXIZOa9wE"}, {"n": "Palmer 2021 1080p", "id": "1QFKQAXUZ36_Aumr2w9M0VG-9y4zP0kDc"}, {"n": "Pânico 2022 1080p", "id": "1-6bw5l-dRqZHtTqEJ8dLWLzZmLVigkoB"}, {"n": "Pais da Violência 2019 1080p", "id": "1gc25XdTBhLDxguKkue8FDVfzSWkmx5_U"}, {"n": "Os Vingadores Guerra Infinita 2018 1080p", "id": "1pSIVPooguXGr_eUAGNRBEnanTKugeFmM"}, {"n": "Os Vingadores Ultimato 2019 1080p", "id": "1zd71nTOzc6LcWy1ofVxmGrVW6apc_sl9"}, {"n": "Os Vingadores Era de Ultron 2015 1080p", "id": "1qjeMWEEnlLOA2Oa347ltiuEXnF8owaTU"}, {"n": "Os Três Mosqueteiros 2011 1080p", "id": "1VGZZD-KRHcml_c1vqaeYaS3Pd-YmJi9u"}, {"n": "Os Três Mosqueteiros D'artagnan 2023 1080p", "id": "1YwVrSzHC6ZiA-TolO_KsaOkPfQZ1XAdD"}, {"n": "Os Vingadores 2012 1080p", "id": "1PWa6M7-UxrJxZSNQzahjB-TjUQz-pxTz"}, {"n": "Os Trapaceiros 2018 1080p", "id": "1OdTl569j_W9tjN_KpO85k1KKebrs0zZ5"}, {"n": "Os Segredos da Comuna 2021 1080p", "id": "1K84wgZDA-fDEQ9AlbIuejVL3hsiF-zUP"}, {"n": "Os Segredos de Madame Claude 2021 1080p", "id": "10gM-P2fKitTArc7FcmmgkLjzB18Y1Ju7"}, {"n": "Os Sem Floresta 2006 1080p", "id": "1rZNDGgMWTfcQC5pGvlRM1a20VnEJDa0H"}, {"n": "Os Cavaleiros do Zodíaco Saint Seya 2023 1080p", "id": "1qh0gx1vRyxoMwXX9XR9U-KeJDMYycBLl"}, {"n": "Os Domésticos 2018 1080p", "id": "1cGjgwYrPmU4ZhRclGCBbbNTdbqD_tRF8"}, {"n": "Os Intocáveis 1987 1080p", "id": "13zNId-HQd4x7M1DbUdxofGSr7O7NzY0E"}, {"n": "Os Cavaleiros do Zodíaco 4 - Os Guerreiros do Armagedon 1989 1080p", "id": "1uZNiHUtQ54uQ9y06d1rxMcl5iZVWQraR"}, {"n": "Os Cavaleiros do Zodíaco 5 - Prólogo do Céu 2004 1080p", "id": "1uut0FRZqpiWUkTJ25vj3rckopqT8EQeM"}, {"n": "Os Cavaleiros do Zodíaco 3 - A Lenda dos Defensores de Atena 1988", "id": "1_hyshrT1rQUzy6vJBWXG29R2Ri0uS3eI"}, {"n": "Os Cavaleiros do Zodíaco 2 - A Grande Batalha dos Deuses 1988 1080p", "id": "1KeFzMAs_pjKsYCSiETUkpBdOR0rgZ8uW"}, {"n": "Os Cavaleiros do Zodíaco 1 - O Santo Guerreiro 1987 1080p", "id": "1OFbza643xrcL1VKMHhEuc3d47n2q7BFj"}, {"n": "O Rei Leão 2019 1080p", "id": "1cZajNRKOkZhGtkUu9-gL0qtMN9McuScK"}, {"n": "O Rei Macaco A Lenda Começa 2022 1080p", "id": "16qox6s-LoJKJYo51lKX0tgatVpMr0YnI"}, {"n": "O Ritual 2018 1080p", "id": "1PQAGZla6CBK6lzbFs7WqmGYW9oyVL6fS"}, {"n": "O Roubo do Século 2020 1080p", "id": "1gFzk4WIrBbcuJ1c8FGR2TJIER1-_-5mQ"}, {"n": "O Segredo de Marrowbone 2018 1080p", "id": "16hsSmwRzn_kykoqeHPFr3g2B4af2Kb63"}, {"n": "O Segredo dos Seus Olhos 2009 1080p", "id": "1uqfZl4avmNjaEm8FqGjIoEeyXmuoYBrr"}, {"n": "O Semideus 2021 1080p", "id": "1kklhajMemrGLfCBQD89p8jI7fh9fr0gh"}, {"n": "O Senhor dos Anéis A Guerra dos Rohirrim 2025 1080p", "id": "1sCjCn_OPmlvCmN3Kq8NnTixVNf_P82HU"}, {"n": "O Sequestro 2023 1080p", "id": "1Qbd3h8axQbpRqMNh_YXO-c9flKYbLCmT"}, {"n": "O Sexto Sentido 1999 1080p", "id": "1pdBLJr_Ljgx2st8UD4_Ey6Z6_6RT4ar5"}, {"n": "O Silêncio dos Inocentes 1991 1080p", "id": "1iPmAq_EnroeMApwME4sGDq3QclXjyJhC"}, {"n": "O Simpsons O Filme 2007 1080p", "id": "1SNQ6A4paNQ6lBlyg4KR48-CwYuuuN5MZ"}, {"n": "O Terminal 2004 1080p", "id": "1OT2pphMyQBNE5ZFZU94xwUMbRDpBAnfe"}, {"n": "O Troll da Montanha 2022 1080p", "id": "1yVYs2I1E5N3Bd_Zi7JruXtqSPFwj7dWX"}, {"n": "O Truque do Amor 2025 1080p", "id": "15-juzH4HpZDU1CY8PY-T9mmkkVBH2Oel"}, {"n": "O Ultimato Bourne 2007 1080p", "id": "13UFdVgc4-uZWfsAY9r1cGXgHadb2fGi4"}, {"n": "O Último Desafio 2013 1080p", "id": "1Z7HcYXDVgx7b7BYTC98M2swtuH1mSWEO"}, {"n": "O Último Duelo 2021 1080p", "id": "1wW-KdQnTaKp7ZMvuiU7vlvYH2i7qbTEn"}, {"n": "O Último Mercenário 2021 1080p", "id": "1G88LpjjhJtaDpvIEk5GuyI2gG-qbmOvY"}, {"n": "O Último Mestre do Ar 2017 1080p", "id": "1lzfOK7MVhB3GltRTQGsBUUPKpOGH61Jt"}, {"n": "O Último Navio Negreiro 2022 1080p", "id": "18UxcpDj4SHXzCX1Szgb4RdM3rD7HUmqt"}, {"n": "O Voo da Fênix 2004 1080p", "id": "1HncwrfQXTnlJRYIdY9EpwcenuEJd8EPh"}, {"n": "O Voo do Dragão 1972 1080p", "id": "1kHvCdF3ZlCVuvjvXsOm65YJwuWzC_dOW"}, {"n": "Obi-Wan Kenobi O Retorno do Jedi 2022 1080p", "id": "1OOTbZX090-5PzzSu2lSO-2xWwP3wu760"}, {"n": "Oblivion 2013 1080p", "id": "1mMw9_slBRVSr16hdzD5XwerjkLCB5_Z3"}, {"n": "Obsessão 2019 1080p", "id": "1w0yUHe7eoPfJVyL1x1SdujbtAcnR7Zt3"}, {"n": "Ofélia 2019 1080p", "id": "1q-Q5eTlwAC1GG6izyuMSml-2wfbcG5wv"}, {"n": "Olavo Tem Razão 2023 1080p", "id": "137gr83bMPXju2GocDjeDMTs5Mz-FYI7n"}, {"n": "Olhos Famintos 2 2003 1080p", "id": "1Zp_bMlOzWK-O7ttuLnh9D4soYj2Gm1vL"}, {"n": "Olhos Famintos 2001 1080p", "id": "14AXMIFquL00mxII9i3KBntbSp0fcbocx"}, {"n": "Olhos Famintos Renascimento 2022 1080p", "id": "1SqhvUdo7EAUICJDiLtUmJxKZ_oypTxft"}, {"n": "Olhos Famintos 3 2018 1080p", "id": "1Gmdol_ti3XB-dgxTY9v45AdGD9pWiqLJ"}, {"n": "Obsessão Secreta 2019 1080p", "id": "1v6_ko3nt4NYLqaOl2KjvEpANRiUpOWGG"}, {"n": "Onda de Choque 2 2021 1080p", "id": "1L_wAEFZaT3S8OPEnzzf-PCK_otgs4fMY"}, {"n": "Onde os Fracos Não Têm Vez 2008 1080p", "id": "1568n9frUpHVnEaiD_kgGqjiwIxUoQ39u"}, {"n": "One Ranger 2023 1080p", "id": "1OE9nMCJxO7wXqMcLxKceMedO3QRiDIGM"}, {"n": "Origens Secretas 2020 1080p", "id": "1N_bcC2gkmppRjnjLu5E3ZSZrsyU4U7zM"}, {"n": "Um Dia de Crime 1080p", "id": "1fXQIW-58y-uwSU1DZWxqMOdf-i6yrvIV"}, {"n": "Oro A Cidade Perdida 2017 1080p", "id": "1KHJ2ubxaHlnx9l9Cxuy_ZoGIMSgg6_A_"}, {"n": "Os 3 Infernais 2019 1080p", "id": "1GERyO3NFOpMhP1I5pT8I_kClWbLQ6KDg"}, {"n": "Os Banshees de Inisherin 2022 1080p", "id": "19gQVl0z6gOr6k4fw0gamS6HePxMx7Jyw"}, {"n": "Os Caça-Noivas 2016 1080p", "id": "1b7VmUJKZLQrzF1y5FGP64snQthf9lZBR"}, {"n": "Os Caçadores da BIblioteca Perdida 2022 1080p", "id": "1xKW5u0y7sE8YSEQFkmuDzcx-G3ZQM3jp"}, {"n": "Guerra ao Tráfico 2023 1080p", "id": "1ZSTQ-Q7D8F9lDMip-PBm41m1Dg6NMFsS"}, {"n": "Guerra Civil 2024 1080p", "id": "1HPtoGweUH3tghaFA_Abki-bthyYrfWnq"}, {"n": "Guardiões da Galáxia Vol. 2 2017 1080p", "id": "1wrf8jqaBD6KDh6IUtnHV46HAkwqhLJIt"}, {"n": "GTMAX 2024 1080p", "id": "1jjHgySe66QAxYzuWAi8ndmpvytIPC8Xh"}, {"n": "Guardiões da Galáxia Especial de Festas 2022 1080p", "id": "17_s9IUcTD0xTWwLeyMOvjuYupSeKZflm"}, {"n": "Gran Turismo 2023 1080p", "id": "1aegVhEEt4jAhMaZSHZnV1ZKPw2Ekvsip"}, {"n": "Green Book O Guia 2019 1080P", "id": "1qWjewvXkfFWWut4p4Fb0bSSFoHBB1ngv"}, {"n": "Godzilla vs Kong 2021 1080p", "id": "1e2rVwUwHpKWDiZP2_Ya2HeuhVWDZQStb"}, {"n": "Ghostbusters Mais Além 2021 1080p", "id": "158Xl3zyX2nTnkvp-OrCqfyBzBwdWp0pw"}, {"n": "Gladiador Versão Estendida 2000 1080p", "id": "18H0iHZpDrRMopDP5Zv--X_oNtpmhSF-n"}, {"n": "Ghostbusters Apocalipse de Gelo 2024 1080p", "id": "12sI3ELj3DaMF7nglwANbI12Z2Du6tTD3"}, {"n": "Garfield Fora de Casa 2024 1080p", "id": "11ojMdgcy7FlrRdMb37UONRUlpDnwbrt6"}, {"n": "Ghost Do Outro Lado da Vida 1990 1080p", "id": "1nPfc_TBJ3icOa4qGKrQzQlaxJpkIdRCY"}, {"n": "Furiosa Uma Saga Mad Max 2024", "id": "1XiBrewKGlrELew0cR8RQXr70fIu1J3Iu"}, {"n": "Fúria em Alto Mar 2018 1080p", "id": "1SbT6RPQpcsHn1m0J5CRn1J52QiqOAKhL"}, {"n": "Furia Sem Limites 2022 1080p", "id": "1b6e7bqlIko9_p3QtgacceJyrl1z9G5HO"}, {"n": "Finch 2021 1080p", "id": "1ISrsioOVroy5jJzPtribmS2AFq_z-xf8"}, {"n": "Fly 2024 1080p", "id": "1I0_Gsmyggo-9lyLHDSmfWpBw6p9t91HM"}, {"n": "Ford vs Ferrari 2020 1080p", "id": "1S9_taDQ6tDij84IZPtpETJv5csFBa_yg"}, {"n": "Forrest Gump O Contador de Histórias 1994 1080p", "id": "1kkyoe5No5SR7Me0DZzCyEjS8yPF4w1pf"}, {"n": "Estranha Forma de Vida 2023 1080p", "id": "10cEUgidjWh4AwHPPaVqEbGdJsPNtv8iF"}, {"n": "Estranho Caminho 2024 1080p", "id": "1mC15eT3U83LR682p-_jCEkfNGqoG-j7M"}, {"n": "Eternos 2022 1080p", "id": "18X7B0gs8PqapCl0peGu5Ai1UiVefZ8JT"}, {"n": "Eu Estarei lá em Breve 2024 1080p", "id": "153DoOK_HIruyRmOwjQczCJd9ySBYbOMO"}, {"n": "Falcão Negro Em Perigo 2001 1080p", "id": "1yFo6w-U6ZCyivgwbTDijzsmlxL5m0AAo"}, {"n": "Esquema de Risco Operação Fortune 2023 1080p", "id": "10mkBWx7PS0Q19-Mk32dqXvyQrlyE5_En"}, {"n": "Era Uma Vez em Hollywood 2019 1080p", "id": "1xuy-tYvZP2QPEYMg-4ZFg1eRvxbqD2o9"}, {"n": "Enola Holmes 2 2022 1080p", "id": "1KDVkiPxhDEEnuw2aJ0SqcSlpZxbHsnEU"}, {"n": "É Assim Que Acaba 2024 1080p", "id": "1KuXk1Ve-fL-mQwjEWCKDXzeRGrf7TSnS"}, {"n": "Enfeitiçados 2024 1080p", "id": "10catwWqOBCyEudj6p_FnwMP6bXL4Q5xN"}, {"n": "Duna Parte Dois 2024 1080p", "id": "1lkbMIixhdFVpnlmGlDulc9TKV4CjHkJj"}, {"n": "Drácula A Última Viagem do Deméter 2023 1080p", "id": "1JjQo6_oMP-mYBafvN0oNuTGlj9RthfPs"}, {"n": "Doutor Estranho no Multiverso da Loucura 2022 1080p", "id": "1ti9clR5WIkiHlUqeSUA-qjwPedYMIiLR"}, {"n": "Divertida Mente 2 2024 1080p", "id": "1tcZVRnH_ttXrPLP-6uanx63ujX13UWS2"}, {"n": "Divertida Mente 2015 1080p", "id": "1KSXKwcC5QFeTC8pHd0JW1zoQgLGOypib"}, {"n": "Diamante de Sangue 2006 1080p", "id": "1YNgkFHS6jfuVEujfaO1ViqQ_lWGlKuvb"}, {"n": "Dentro da Mente de um Cachorro 2024 1080p", "id": "1PSoCCv5OSatnkW2tXIyVrNGJjQvTACU8"}, {"n": "Destruição Final O Último Refúgio 2020 1080p", "id": "1cFI6t84Xkwr8HO9D3ActOhVvXs7W2W2g"}, {"n": "Deadpool 2016 1080p", "id": "1-_zvRZBkMh02T7iFyKUf1jGjB_Idz9G3"}, {"n": "Cumplice em Fuga 2024 1080p", "id": "13zbr1_KyW1VduP0e8J6PUr18CFBlFe40"}, {"n": "Deadpool & Wolverine 2024 1080p", "id": "1GCaENRaKrb-cZXDhvgvG4s8hOwLHgbvF"}, {"n": "Cry Macho O Caminho para Redenção 2021 1080p", "id": "1Ui-GOn75yocsFsGnF9H3UUKlS4w5vd4g"}, {"n": "Cuckoo 2024 1080p", "id": "12HU1RC7uCPVCi1ys0YOi-OYL6cOILfiJ"}, {"n": "Cruella 2021 1080p", "id": "15lOmQnVajno6c2IeswUuMUhVZ5hrKafn"}, {"n": "Crepusculo Lua Nova 2009 1080p", "id": "1VEyrr1_GCC_COoWUyer-XckoT2sVjpop"}, {"n": "Crepusculo Amanhecer Parte 2 2012 1080p", "id": "1nyYTqmiV3i3EoRXgrlZ7yq-zF8qeBYwi"}, {"n": "Crepusculo Eclipse 2010 1080p", "id": "1jVJmIwkOP2r6LnplxM5EqFjZYJsxs5pi"}, {"n": "Crepúsculo 2008 1080p", "id": "1H_8nIXbS52m2_3sFRtvByTQx8DKKKdAk"}, {"n": "Crepúsculo Amanhecer Parte 1 2011 1080p", "id": "1zrI8o9gdtG4wnRdcitO4MAXvrC5Ebj0D"}, {"n": "Coringa 2019 1080p", "id": "1s2CHV9QpbZD-tmigjkRzHBJCizoVjaWE"}, {"n": "Coringa Delirio a Dois 2024 1080p", "id": "1-CV7ckBv_F9YHRM31Zl63XpdS1kg709c"}, {"n": "Coração de Caçador 2022 1080p", "id": "14oplnJv3a9v1WwSrXuozfsUk6PWWJEYN"}, {"n": "Corações de Ferro 2015 1080p", "id": "1lsuf6BgM79ciKOCg1pSDEnaeoz263411"}, {"n": "Contra o Mundo 2024 1080p", "id": "1hJHx00NQ2T1f9qascSqfxxQI3exBzqRF"}, {"n": "Conexões Perigosas 2023 1080p", "id": "1R8cmImv4yM2QZHeN0OOk9gSax9EU051A"}, {"n": "Constantine 2005 1080p", "id": "1MEyzDRxLeJvf5HZGNXePk1VGL3av9usX"}, {"n": "Clube da Luta Edição 10 Anos 2016 1080p", "id": "1maqu9azvWHkIQKw9Uah0H430BR-ZeYnq"}, {"n": "Clube dos Vândalos 2024 1080p", "id": "1iENiOUeTF8Z6RNS6Uv41mrc9zZ38jPdu"}, {"n": "Como Vender a Lua 2024 1080p", "id": "11wBl89Sf-ZsH1Ibc4tJBKTlTwuhRh5A9"}, {"n": "Cinquenta Tons Mais Escuros 2017 1080p", "id": "1OK3NPz5d0d9nJ1eYbo8Zz7ThW9RMb4G-"}, {"n": "Cidade de Deus 2002 1080p", "id": "1Jw_BeNYWJEmF4oXlJls22TPLC398MrZ_"}, {"n": "Cidade do Asfalto 2024 1080p", "id": "1ZPvgEx8yPEDKGxDOlYeWH4oNoFRJB3ma"}, {"n": "Charlie em Ação 2023 1080p", "id": "1bn2YCCS-Gj-L6vRP5vDlTVciSL4i964v"}, {"n": "Cerco ao Terror Ataque ao Templo 2021 1080p", "id": "1DHURgyESTVA-oaZI2yQAVTRkSAjqFSTd"}, {"n": "Cella Door 2024 1080p", "id": "1denaF1y_mmueyXggQdLKVspiTNxRZl5W"}, {"n": "Carandiru 2003 1080p", "id": "1wccLZxfAl6ETIssZFIebcLdlTd97r0Jj"}, {"n": "Cela 211 2010 1080p", "id": "1TgFbrXm8xs-MQwaB-t-_sIZPAiWEThLw"}, {"n": "Camponeses 2023 1080p", "id": "1nmwah2ZCQGWd1LGlWUOpVp8s2x9q3pSE"}, {"n": "Caminhos da Sobrevivência 2023 1080p", "id": "1Glt5YCAfkek8Or7BCAMt1d3tTFyaHDmm"}, {"n": "Cabana da Morte 2017 1080p", "id": "1I9rbSiyl00wdg2dv7u4CAYMqG7ZCqfAs"}, {"n": "Cama de Gato 2023 1080p", "id": "1iiVFiO4A0i2yDxA1jmcVtzaCQQiJ5NIX"}, {"n": "Borderlands O Destino do Universo Está em Jogo 2024 1080P (1)", "id": "1Du7rLL0ChZgV-Tz_H72i0FpEWEat_2jW"}, {"n": "Bob Marley One Love 2024 1080p", "id": "18yH43tnBZZpSR1KOFpHaEzGKfNN7GgM5"}, {"n": "Beetlejouce Os Fantasmas Ainda Se Divertem 2024 1080p", "id": "1HpyrgbaJJ5VIBMW29LzVb9H3XxnMTNEi"}, {"n": "Blink 2024 1080p", "id": "1ExqcfunxLyyuhGFItOKkpurcLIK3oecT"}, {"n": "Blitz 2024 1080p", "id": "1rAWGiKt2FUbSiM4z62ooOK7rAQ2L71jZ"}, {"n": "Batman O Cavaleiro das Trevas 2008 1080p", "id": "10u5FamBu0Pm3tMU8a8WglsrMKb_KT2G9"}, {"n": "Batman Begins 2005 1080p", "id": "1RRKaQ1SZu6K_Fsf2QQDkICNrXR2Q0WE7"}, {"n": "Batman O Cavaleio das Trevas Ressurge 2012 1080p", "id": "18pKkPktuyDNRbktwa2ykdfVqNTwn_Y0r"}, {"n": "Batman 2022 1080p", "id": "1CM0wTH3VV8q264-9FBec-T1yv4ingq5T"}, {"n": "Bastardos Inglórios 2009 1080p", "id": "1gUbTwf5Aw0yqEn6a7XYvT66H-qWN0IMk"}, {"n": "Bagagem de Risco 2024 1080p", "id": "1p_7cldlhIEYKvYzduHwgC1vu5VOutJeW"}, {"n": "Bad Boys Até o Fim 2024 1080p", "id": "1XS6oLoXbrIVbB30KT4LdqfXDXAegbMm1"}, {"n": "Babilônia 2022 1080p", "id": "1a9AE74AR6PZA7Pyptg5x7GGrESjNutCF"}, {"n": "Avatar O Caminho da Água 2023 1080p", "id": "1n8Sl_5fYObYooLEnajg2bQJkHsN-EvK0"}, {"n": "Até o Último Homem 2017 1080p", "id": "1jU7w6o7PzStXtzPtofIrX7crsqX3sCGv"}, {"n": "Assalto ao Banco Central 2011 1080", "id": "1s3oGAZ5a51bi2rZkczSDNCBTso61Im1j"}, {"n": "As Marvels 2023 1080p", "id": "1A_HUzmvPUZD9BmuBqFfSoPkjvv8YnQk9"}, {"n": "As Crianças Perdidas 2024 1080p", "id": "1SmTwRoEPWQpCyWo5VtCFZLKt_HY6Kxkr"}, {"n": "As Branquelas 2004 1080p", "id": "1t6E4PGCJ56ghoKkNQVpbZNc3QXcMZYdK"}, {"n": "Ary Toledo Ce Senta 2024 1080p", "id": "16YM3ebD_NRV6yfpkTrkerPpuaecw3kc9"}, {"n": "Arremessando Alto 2022 1080p", "id": "163MmluhWWCjNczUp3mlRya5JMZzIbp7-"}, {"n": "Armadilha em Alto Mar 2024 1080p", "id": "1nmAlmQL7lf7VNtoI4CxNxY6DlgzdBZ1F"}, {"n": "Armadilha 2024 1080p", "id": "1ghxoHK8kyqaQP5brHeKNZVEMNxTdhmnV"}, {"n": "Arena Mortal 2022 1080p", "id": "1uGj5PR5LeN41z01YjYD5mg7WJnWDxay-"}, {"n": "Aquaman 2019 1080p", "id": "1vrOF90eF2TPmosgfKq1Xxq8g22UVqUQT"}, {"n": "Aquaman 2 O Reino Perdido 2023 1080p", "id": "1IVLc5zNe1XMDCBgocqNpXmTnYz3Ad9gA"}, {"n": "Aprendendo a Ser Pai 2021 1080p", "id": "1WxS8ONeZSP32W5UmQDmtglx6BNdJhyIT"}, {"n": "Apollo 13 Sobrevivendo no Espaço 2024 1080p", "id": "1M-vpINwMS7RxhIy8AWmq5wkOsMxxItlB"}, {"n": "Apocalipse Z o Principio do Fim 2024 1080p", "id": "1aAqkqSGwKiggBnXqjS3qfCX7S1HsY2ed"}, {"n": "Antes Que Eu Mude de Ideia 2024 1080p", "id": "11QSBMC4yu-I_IAu5pQ7QaW9WLuN8rnYm"}, {"n": "Anônimo 2021 1080p", "id": "15ZxqbYhnTrUAnbH6WYpr68WR6R2uoJwg"}, {"n": "Anjos da Vida Mais Bravos Que o Mar 2006 1080p", "id": "14Gn4SikDbkX4B2q1IzKw7IEr5KrH3yoo"}, {"n": "Anjos da Noite O Despertar 2012 1080p", "id": "1TzfYUnFiTuUMIQqFr1KIhNW4JNmLqUd3"}, {"n": "Anjos da Noite A Evolução 2006 1080p", "id": "1Nnwp9ZFqO0UVOlRYCxz_X3C4-MAhgBUD"}, {"n": "Anjos da Noite 2003 1080p", "id": "1cT-tlKCsIA4P7Njp08M64RrByI-9Q0ci"}, {"n": "Anjos da Noite 3 A Rebelião 2009 1080p", "id": "1Niq4CpyxyJg-UpxCtZPhuPFpHN5f2Jio"}, {"n": "Animais Fantásticos Os Segredos de Dumbledore 2022 1080p", "id": "1pqCH24DJqjaUGorwtOs26Tko-9J-a4-q"}, {"n": "Animais Fantásticos e Onde Habitam 2017 1080p", "id": "1TaMLGEpX9ybzFGGkbttxG_N6nLEq0aeg"}, {"n": "Amor e Preconceito 2023 1080p", "id": "1MbgbqjpjfqsLDN6whzf_rxPT3JmD7x6X"}, {"n": "Amigos Para Sempre 2019 1080p", "id": "1H_E49ue1_tCMoFpYVhMjH1Yxehn3Tfcx"}, {"n": "Amigos Imaginários 2024 1080p", "id": "1f9-XOF_hDENLjH1YBGRR8Yo9PYwiu4mo"}, {"n": "Alien Romulus 2024 1080p", "id": "1mWzJ652G2yb3kmQLN-5kOX39Ppryux8M"}, {"n": "Alien Convenant 2017 1080p", "id": "1rKfZCJE2AqNwv8gFbKb4UiY2lUc5dHAv"}, {"n": "Alerta Vermelho 2021 1080p", "id": "1uB15AgVCKxm2JepgjT5OqplbTxEMstuy"}, {"n": "Além do Tempo 2022 1080p", "id": "1hB5Lf7fndIH8JHX2lheSsCNdFQ5sMC8n"}, {"n": "Alegria 2021 1080p", "id": "1eMQry2iDxGxudtPpaFbWxXvHkIahxrny"}, {"n": "Ainda Somos os Mesmos 2024 1080p", "id": "1QLdG_nBiTwvmNwM1KsF6IXfgv9SvQshc"}, {"n": "Adão Negro 2022 1080p", "id": "1A8E7rq8V7UroO2cld4pExkqkd1Tz5ioC"}, {"n": "Acampamento com a Mamãe 2024 1080p", "id": "18pGc5odEO-vJTkCho8A8yqZ46jp1-gje"}, {"n": "Abraço de Mãe 2024 1080p", "id": "1HsxJKaSyz6XXyALlDe3GfG139pS8Ucrz"}, {"n": "A Viagem de Nossas Vidas 2022 1080p", "id": "1RgblURjlemxRCrs6sDGWEzVhgnZAI-a0"}, {"n": "A Vespa 2024 1080p", "id": "1hOVWpr7ZRFb1F2yheQ-nyrFlzP8fNk5t"}, {"n": "A Última Sessão de Freud 2024 1080p", "id": "13Qh0ghbG7qzEEc3QdTEHiMd6u8l8NC00"}, {"n": "A Ultima Onça Negra 2024 1080p", "id": "1S4S64V1Wm8LxL1BOPsBwykWMIWgIbcF3"}, {"n": "A Teia 2024 1080p", "id": "1JyEdpexxiGJI9snZMK_g9htX_iKvrmHV"}, {"n": "A Procura da Felicidade 2006 BrRip 1080p", "id": "1nHuUv5qDpdCYkJnoKlUDlVZk2EYCSPk9"}, {"n": "A Patinadora 2022 1080p", "id": "1KDQfIkg4pequfw2c3ZxEir06u6C6sA35"}, {"n": "A Pantera Cor de Rosa 2006 1080p", "id": "1rSaxwFiOdNK-k8mZ0cjWe-4qdxSh1FiH"}, {"n": "A Mulher Rei 2022 1080p", "id": "1yr74xHxqwSPxnWB1fS_g6ugSDuOpm4aL"}, {"n": "A Metade de Nós 2023 1080p", "id": "1BMQjI2753Yn5uNV3WgOmxhQrt1n70XxE"}, {"n": "A Hora do Vampiro 2024 1080p", "id": "1Ph_6qPg53K7mo-0NDbNDh1UxStsD0gMO"}, {"n": "A Grande Aposta 2016 1080p", "id": "1af4KTaAr7c0f2ukTIQU8YMP_7QwG-Y6U"}, {"n": "A Garota da Vez 2024 1080p", "id": "1D5_r859XdEb-OXVMVT2N0q2jdhsK-qu4"}, {"n": "A Fuga das Galinhas A Ameaça dos Nuggets 2023 1080p", "id": "1A1qbBSz6tV2xlPZQBKZyXAz25Y-s4zGH"}, {"n": "Custe o Que Custar 2020 1080p", "id": "1TBcUMcdrKt4Vz5xWwcqKJ_DCdIK2-uY-"}, {"n": "1964 O Brasil Entre Armas e Livros 2019 1080p", "id": "1Btrs55o9aYmTxsYmvtlNGVWcG7ScoM4S"}, {"n": "A Múmia 2017 1080p", "id": "1q-0q78Phu84gtTn8tqDWO9T1s-xWgQMT"}, {"n": "A Vilã das Nove 2025 1080p", "id": "1bLXYmSBogZxhvxgzlae2cckaeVjOHfWH"}, {"n": "Delicious 2025 1080p", "id": "1ieMqtDTXH8GCFZrxIc4FV-oep5wq4EMH"}, {"n": "Demon City 2025 1080p", "id": "1TxCzePel2CIIQBqnv_taI5eu38-1qCa7"}, {"n": "O Mensageiro 2023 1080p", "id": "1ez74dqq51OC2RxBKoQ3mjpT4E5e7qvya"}, {"n": "Você Nunca Me Encontrará 2023 1080p", "id": "1yXasLGKT2WuFmCgk0PumTsDXbcaPpQ5A"}, {"n": "O Pranto do Mal 2025 1080p", "id": "1a8xGCVix4cHYbqWEjSpfqIDPFFDQjULU"}, {"n": "Último Alvo 2024 1080p", "id": "1ev2v7pwfo988tLKrlb1TtNs5nKTseTZU"}, {"n": "Sing Sing 2024 1080p", "id": "1V4FhDPH6-AHarkSoULoEgekrU_-pZycF"}, {"n": "Terapia nas Montanhas 2022 1080p", "id": "1Rt2nAV5lvA3PkslwtOMJc3lV0SspOoiy"}, {"n": "Setembro 5 2024 1080p", "id": "1YsYutXguKxOG8iEsQmePvOEi87BVLJy3"}, {"n": "Vingança Acima da Lei 2023 1080p", "id": "1KTL90EURR873o-_eg7gDoGYaaBaTqt-1"}, {"n": "Sombras do Passado 2023 1080p", "id": "1mD4gwR46RxoJx5YXJGoYANmF-zWwOJBM"}, {"n": "Plankton O Filme 2025 1080p", "id": "1IGKbLP65hANjHo1BV1T8Y027pxMm0rs4"}, {"n": "Uma Casa Sem Saída 2023 1080p", "id": "1z3YDdyB1P6tyyA7vbc8zVTyyMu8U0jMf"}, {"n": "Sob a Lei Do Crime 2022 1080", "id": "1Liolq-qEIz4G3cN2THBoZR3HV5YjtQjy"}, {"n": "Outro Pequeno Favor 2025 1080p", "id": "1JCCCeJGcMY3J548odT7ddMkSt2aohV7p"}, {"n": "O'Dessa 2025 1080p", "id": "1bDZW337heCrbMFrVK2owruAQwUUOw2Vv"}, {"n": "O Segredo de Mercator 2022 1080p", "id": "1G0_q9gXaQNWyDqy_DWWttIFzLgRbmZqZ"}, {"n": "O Ourives 2022 1080p", "id": "1s65RpH1wQFWfXO578K59pziGf7z9XUBO"}, {"n": "O Maravilhoso Mágico de OZ Parte 1 2024 1080p", "id": "1MiKrf5vC0-Z3UCYcUsXepBbxeA6wcT_z"}, {"n": "O Maior Roubo de Arte da História 2023 1080p", "id": "1BGbxTHayYhSPmiYi2NNIwjP9E_EZ_ieD"}, {"n": "O Jogo Da Garrafa 2024 1080p", "id": "1oKm-pNW0CttE3J5k4Q6TplMp7xAl6hJf"}, {"n": "O Homem do Saco 2024 1080p", "id": "1Q4fQnqaoh20ZkWHy6L5rH2Qmis1zjlwJ"}, {"n": "O Homem Cão 2025 1080p", "id": "171fR1u9MEmiX5FJW93BDKH9mb6dtAOOj"}, {"n": "O Fim da Lealdade 2023 1080p", "id": "1CbaHvz1RYfEOj6SoEKUqGv9t84zFcJbW"}, {"n": "O Estado Elétrico 2025 1080p", "id": "1F6WQx2zbPKn1LfmKhu_QloisJ5YpsDs2"}, {"n": "O Céu Não Pode Esperar 2023 1080p", "id": "1LFkz_T93p-ANGna7Ur3d28qc-0Iaxzur"}, {"n": "O Brutalista 2024 1080p", "id": "15g1IaVNeX2EjIbJYp-bwAvzZIq4FiIXg"}, {"n": "Mufasa O Rei Leão 2024 1080p", "id": "1yW-FInyUyn-sZ6Wb6q-bS_RK9fl8CwYQ"}, {"n": "Moana 2 2024 1080p", "id": "1iBY8oCfF3X-yrRotOaNp94TiXG2h8CgX"}, {"n": "MMA Meu Melhor Amigo 2025 1080p", "id": "1QgWXNKA6RDCpVLpErJR7jeWxgpQ763jx"}, {"n": "Mickey 17 1080p", "id": "1fWctcqp9nFjQekagsnkSkYXxSQDL2sUO"}, {"n": "Lobisomem 2025 1080p", "id": "12Gu5SiNGm2NvN0RGvpsLrlCVux8QsniS"}, {"n": "Larissa O Outro Lado de Anitta 2025 1080p", "id": "1sWAK6JHJ711nGQfeDJlxshLly4QFI5En"}, {"n": "Holland 2025 1080p", "id": "1iwtHwaV2A3ELosqX5JxUchIM3khrPSEt"}, {"n": "Heóis do Amanhecer 2024 1080p", "id": "1xIka6jWHg5ajyz5d780Znkp-AGL8cFAV"}, {"n": "Fora de Sincronia 2021 1080p", "id": "105aW81GZwL8vTFnT-BZnYAaUORyIFtL4"}, {"n": "Filhos da Violência 2021 1080p", "id": "19RIAUFODpA2eFYzEeLOahT_Fs1B5_mew"}, {"n": "Entre Montanhas 2025 1080p", "id": "1VYAsv-sTA4SjUDCnzZp1hxKfYy2CtORl"}, {"n": "De Volta ao Mar 2024 1080p", "id": "19Vr7EuSikne2lKWWCqSpz6IyJGtPKJxY"}, {"n": "Cuidado Com Quem Chamar 2020 1080p", "id": "1v4QVdjjdV15MTyHjUUChyawHSINmd3f3"}, {"n": "Covil de Ladrões 2 2025 1080p", "id": "1lWtd0e7hvFuHfuqXD51a7w3_lFQjLKmy"}, {"n": "Como Ganhar Milhões Antes que a Avó Morra 2025 1080p", "id": "1WFj09lXd-YWBdCaaAtFhbzs2uvl4JLWu"}, {"n": "Cassino in Ischia 2024 1080p", "id": "1qKvgTJUvJHANp0dKX0sqXfmLN5Q9gXbv"}, {"n": "Casamento Letal nos EUA 2025 1080p", "id": "1hbR2_G-BLfVTxaxvhefkmlFDpSGfMtQi"}, {"n": "Caos Os Crimes de Manson 2025 1080p", "id": "1bfTDJ04KM6U4hUfB5uv3uUqDZ-GjE8hO"}, {"n": "Calígula O Corte Final 2024 1080p", "id": "13WpaEUBsWJ6_KG-YELIavhSJtid3GdjG"}, {"n": "Blindado 2025 1080p", "id": "1qVsJP9wAihfDZF2LJh7DhLPWKokg2ckx"}, {"n": "Até Que A Morte Nos Separe 2023 1080p", "id": "1i9Ux6G3ePJwRAdoS28N1gPAHuMl4nqk-"}, {"n": "Aos Nossos Filhos 2022 1080p", "id": "17gvJpVnarcKdMzdevZ7QQ9wahqLG_YWV"}, {"n": "Amor Bandido 2025 1080p", "id": "1p3j42WME6oDKDBz-lferBVxXV9rhT_5N"}, {"n": "Ainda Estou Aqui 2024 1080p", "id": "1NlTlYftD78tcHjAPDXPXIM3xNRowj1wD"}, {"n": "Acompanhante Perfeita 2025 1080p", "id": "1cgrmc-vx559hj--sF1y4A6rF7EftY3aT"}, {"n": "A Pandemira da Água 2022 1080p", "id": "1JC4CLrSbmiAI64aNiZeUsi-hK-QcGevb"}, {"n": "A Herança 2024 1080p", "id": "1Yc-fBkiIGRCqGEE9X2Qz0mTwlmB1nr1T"}, {"n": "10 Regras Para Salvar um Casamento 2022 1080p", "id": "1Gd_vD9kSLv-JqkO3-Dsbly2gub0V_wA-"}, {"n": "IT A Coisa 2017 1080p", "id": "1-POb16sLyx_z8LoHzf7h_79nAlDo0lnH"}, {"n": "Kasa Branca 2024 1080p", "id": "1CFXbrM-Wm3I8ugU-Hk80NYIM1O7udxb2"}, {"n": "Y2K O Bug Do Milênio 2024 1080p", "id": "1gu1p3wFRt3KbTCgvbaBFjk-cEDPcHBCw"}, {"n": "Vini Jr. 2025 1080p", "id": "1Oe9KOI_JHVBAj5dTGXj15MrCNWZSinoG"}, {"n": "Um Panda em Apuros 2 2022 1080p", "id": "1he0yCznsK3HW2YLagBPDja1KHOx0Sbhx"}, {"n": "Um Filme Minecraft 2025 1080p", "id": "1SX9k-YOarFo8ZnO2LEXDvkOrbpQ6bIoA"}, {"n": "Um Dia Daqueles 2025 1080p", "id": "1C-Tt-B6NF4pkg5-CEyqJE4SUxGyykXih"}, {"n": "Todo Mundo Ainda Tem Problemas Sexuais 2025 1080p", "id": "1ugKpqLBi4_6TEZ0jd-uD0pc2yi-l1f-l"}, {"n": "The Alto Knights Máfia e Poder 2025 1080p", "id": "1oz04n6SlwKYpCTORhIKOeJ9bOwnKcHbl"}, {"n": "Superboys de Malegaon 2025 1080p", "id": "1QykLOK8MJmNxeby4ZXYOgSWUykxlM4Ok"}, {"n": "Sete Véus 2023 1080p", "id": "1CLsarQAQHUQMmlx2nKGheZ98k3leHe0J"}, {"n": "Rita Lee Mania de Você 2025 1080p", "id": "14CAl74ibxeJzEDOY_8IBC8z0HKnA5Cjk"}, {"n": "Resgate Implacável 2025 1080p", "id": "1EcH9h8AQ79lktH_7Gr4IVtai-HitSlAw"}, {"n": "Quebrando Regras 2025 1080p", "id": "1XDn6f5Xfw5gLLOyEnpxcEe7YvaES8fxc"}, {"n": "Procura-se Um Filho 2019 1080p", "id": "1I6bJ4xv4DbFLRvZzDz1UbWa7j5VrUbSy"}, {"n": "Presença 2025 1080p", "id": "1FvT6Xdve_zMy8FTu8iEJZEnThKJ4rHfd"}, {"n": "Peter Pan Pesadelo na Terra do Nunca 2025 1080p", "id": "1ESR5OeVWqhW0vS2UDY95dqXBh3jGrvCJ"}, {"n": "Perto de Você 2024 1080p", "id": "10FpCYibqCP4V80OLovBlZtIUoW56ZAHG"}, {"n": "Paddington Uma Aventura na Floresta 2024 1080p", "id": "1Wzs0vjtHN3guZz47xDgzrd6JbrsyVzxo"}, {"n": "Os Guardiões da Estepe 2022 1080p", "id": "1Q_LdMGlye5KCyWaaLPIWHUcSU7HHGqY8"}, {"n": "Oeste Outra Vez 2025 1080p", "id": "1AJ3iswxtn8qfa7moYq42C3WSKfHFQ6KE"}, {"n": "O Universo de Oliver 2022 1080p", "id": "1Oq82xIkRF_ZMSd6T40MakG5YuoWDtaYn"}, {"n": "O Último Acordo 2023 1080p", "id": "1jbF_BtcXPn2us5W4XO84M8crp3-cjAv0"}, {"n": "O Substituto 2021 1080p", "id": "1KUHaHqYXi9f05DvDiWZvjG4NnmUKKVAN"}, {"n": "O Macaco 2025 1080p", "id": "1nzhseBZMyj3EhCalSB6GCjhN-T_3FL0-"}, {"n": "O Legado 2024 1080p", "id": "1_f8m-2YtgoM7Vrk85HKFLV0DprWoKgiS"}, {"n": "O Jogo da Viúva 2025 1080p", "id": "115g546nSjbfiqj_SQ4Yihm1mY0vVwDJx"}, {"n": "Novocaine À Prova de Dor 2025 1080p", "id": "1wUH31BIck6ScLzNggBui4jIwYx93cuJQ"}, {"n": "Na Sua Pele A Série Marked Men 2025 1080p", "id": "1zAmgBE_e101Th8rxPkADnQXYQ9yfWTpi"}, {"n": "Ladrão de Jóias Começa o Assalto 2025 1080p", "id": "1o462iILI0BfiujwZwIbZm4nmZY6yPjG6"}, {"n": "Heart Eyes 2025 1080p", "id": "16r8viIYtVy_ScH-diJwymrmGT7gCgOPa"}, {"n": "Gananciosos 2024 1080p", "id": "13U91CLIOag556jN5rYM7RYnsFfu3va75"}, {"n": "Fúria Sobre Rodas 2025 1080p", "id": "1eI5AUIkKOBjuAsIsqJRnIsfWYc3RSdqF"}, {"n": "Fight Or Flight 2025 1080p", "id": "11v0o3mYOKD6ndqa9FO92CXdNjXlRWNrL"}, {"n": "Exterritorial 2025 1080p", "id": "16wONpQwAdUY8vwi7P7MqRawiN5xl_HYx"}, {"n": "Entrelinhas 2024 1080p", "id": "1_63FHphvGRWrq3yc6nP5JVvSBbBMugEJ"}, {"n": "Deslizando Pela Vida 2022 1080p", "id": "1z1mt3Y6R6kLZQzrnvuWq2QYUOxObQqkR"}, {"n": "Deslizando Pela Vida 2 2025 1080p", "id": "1skDWInv3RMCPHrUYA0OLh4g-SNJQ7LFU"}, {"n": "Crypto A Aposta Final 2025 1080p", "id": "1ApCMkrfrtBqJpE--jinBHr4rAJFl3Qg_"}, {"n": "Confissão 2022 1080p", "id": "11ab-LQ5TyK8I8_a3NsXqWQcxbk0QlfAJ"}, {"n": "Código Preto 2025 1080p", "id": "1SVcOaIA2IVjj7JcW-0WQKHxwSypXo06N"}, {"n": "Caos e Destruição 2025 1080p", "id": "1wP-strE48JMG25oNMiFbk8O3XT-46QKJ"}, {"n": "Cão Espião 2021 1080p", "id": "11IMQUuWmBivxfgb_f_fZJ2BHcABswBgM"}, {"n": "Better Man A História de Robbie Williams 2024 1080p", "id": "1NaeI1FoohM8wiHT_iBqtGHV2xjXd6WFA"}, {"n": "Ash Planeta Parasita 2025 1080p", "id": "1XD1qd0miAm_xNRPYgsTcjU30T75hLqp2"}, {"n": "As Quatro Estações do Amor 2025 1080p", "id": "16odnqxeKCX9oZVn_IheqjJE_8K71SITb"}, {"n": "A Verdade sobre Jussie Smollett 2025 1080p", "id": "15BKW8nYKYurGL11Xw5abj8zZjHBCQvVQ"}, {"n": "A Última Batalha de Ellen Cole 2024 1080p", "id": "11YD14X2e2RKcsaWLSVdgP9Co1-xClBno"}, {"n": "A História de Fátima 2021 1080p", "id": "1KWtp0TX1d4MzBnnHaCsaLGfm5Ng-PQJD"}, {"n": "A Gangue de Paris 2022 1080p", "id": "19U071bUTdHQj6WeyjHsU460LsdSb69ut"}, {"n": "A Família Khumalo 2025 1080p", "id": "1XxrC8U6wL43rZTlalIWQLWbyDj2U5t2z"}, {"n": "A Caixa dos Prazes 2020 1080p", "id": "1d-H365T1t6qQyuTgCLTQLP05inC7QOWs"}, {"n": "A Altura 2025 1080p", "id": "1Tt3OPxoykNUbOXNRTXqqoci36tPS7hSD"}, {"n": "O Último Combate 2024 1080p", "id": "1LkHGdzzBCZdebuxurZOedAagAVMUsvCQ"}, {"n": "O Útilmo Mergulho 2025 1080p", "id": "1gtZuvIsvUyd5qnAxg6qg5X9fjIE7RvW4"}, {"n": "Operação Panda 2024 1080p", "id": "15r0wY0zFtM8oovArZi95ZRNn8R1ptJQL"}, {"n": "Perdido na Montanha 2025 1080p", "id": "1NpT6JZDq2mIzZOJDPrzilf64YkWBBF_0"}, {"n": "Predador Assasino de Assasinos 2025 1080p", "id": "11zh5xPFUE087DVVz-94qjCgqk2ysqUW0"}, {"n": "Queria Você Aqui 2025 1080p", "id": "1VMKHwsis4x-bGpCadNnJLI4pXCq5EnnG"}, {"n": "Recreo 2018 1080p", "id": "1tDpkaH6MY2bvTKW5l6ghzikhYQxhofZ5"}, {"n": "Retaliação 2021 1080p", "id": "18vZUrBrLFC2Vrr7hscZd4IriRa7YeMpw"}, {"n": "Retratos de Guerra 2019 1080p", "id": "11F2sJOyNPiULIjLmI1oZ5Kbpngz5eiZ0"}, {"n": "Serra das Almas 2024 1080p", "id": "1jnc8XdVsHCBHnpBJfiXDGcrgRNxJIw4a"}, {"n": "Rua do Medo Rainha do Baile 2025 1080p", "id": "1gnh_Nb2PokZ0HgUm84CFhB6ulGKMClZ9"}, {"n": "Seu Único Filho 2023 1080p", "id": "1qV_NaS2C-1VoceXeCRBtrGCLelj88IIk"}, {"n": "Skunk No Limite da Violência 2024 1080p", "id": "1x7k9rkJbl2tuevZaA5O5QDLpjr2wDz66"}, {"n": "Tempo de Guerra 2025 1080p", "id": "1_iylHYndWDdTBP9O1PVS7OFU5zDoe89H"}, {"n": "Sobreviventes 2024 1080p", "id": "1zq1Qy3eQmXurn-cIt60dVJogZOQYtqPy"}, {"n": "A Balada da Ilha Wallis 2025 1080p", "id": "1ROSh0jvdxJ-4P-MyfZbREd0r0h8QGnZE"}, {"n": "Premonição 6 Laços de Sangue 2025 1080p", "id": "1Apb-1tcsTizfore9NOrY7_NTrRQ1t-aE"}, {"n": "The Old Guard 2 2025 1080p", "id": "18-11CFSaPtOuHJH98FrDPLKR8CMYaJS5"}, {"n": "Love Me 2025 1080p", "id": "19CWgWPk-0yXER-nNuMCBL53GojqQ6xKp"}, {"n": "Maré Alta 2024 1080p", "id": "14TqNdS-e_i1IleDH_JtTWB_0U7CByyOh"}, {"n": "Missão Extrema 2 Guerra ao Terror 2023 1080p", "id": "1et5AL9vZaf5R8dy6KagmPLM3MuYeD4YC"}, {"n": "Nas Terras Perdidas 2025 1080p", "id": "12KCBN9ppea87LHKNHrE2V0NbBhNJUXLR"}, {"n": "Noivo à Indiana 2025 1080p", "id": "1byVCd8sTmC4LLt2D0rkeHWdY0DnpXixN"}, {"n": "Minta Se For Capaz 2021 1080p", "id": "1Moirr1VMGHhxzCi0t7GUYghvgxn_PE8P"}, {"n": "O Contador 2 2025 1080p", "id": "15jYbrlk2cuf37Q-elAIfSUmj-9x8ehC7"}, {"n": "O Esquema Fenício 2025 1080p", "id": "1DbAP0SjLjAtYXq2HY9Uu3rZCG-uthrq0"}, {"n": "Nossos Tempos 2025 1080p", "id": "1JvXRBLoG5DGuRy4UWML7KxFMuaOsQwIr"}, {"n": "O Exorcismo do Demônio 2020 1080p", "id": "13BXtSYTJMzWGJxuZmPMd3m-s6WRuG1H3"}, {"n": "O Grande Golpe do Leste 2024 1080p", "id": "1XbxPpVhGs3cLP5mWNPf4O3zDByTrgPQo"}, {"n": "O Inimigo Está Por Perto 2022 1080p", "id": "1jV1iVDiWux9U90xDkt8rFqnem-m8N7XO"}, {"n": "O Olho e o Muro 2021 1080p", "id": "1uw6afp0eQ-PrLjBif8DBaINkis1MQg3f"}, {"n": "O Palhaço no Milharal 2025 1080p", "id": "1glBDva11af4vxqox4gY3SIyJlqUWnrkb"}, {"n": "Betânia 2024 1080p", "id": "1zMiTLCRykx29o9cW_fHKTb1tgwnRwNbn"}, {"n": "Dora e a Busca Pelo Sol Dourado 2025 1080p", "id": "18K3Vv4TDFvzRmgHIaBnPtaIE_qF1edJu"}, {"n": "O Retrato Do Amor 2022 1080p", "id": "1mNcz4TztURZRbPhP4O_hPpRdXSwvADt7"}, {"n": "Vitória 2025 1080p", "id": "183KeDlZP-Ev3Oib8ynEfM4P9N-NOX1VC"}, {"n": "Thunderbirds A Elite da Força Aérea dos EUA 2025 1080p", "id": "1Y5Y-zVLjwxJY4m9O-dzXGyeFMb82Ipmu"}, {"n": "TItan O Desastre da OceanGate 2025 1080p", "id": "1-6LJoIgr1FojTaig-MU0zQFFx8ajf1Yc"}, {"n": "Torre Greenfell a Verdade por Trás do Desastre 2025 1080p", "id": "16vbL_5MVXtYxVi9g2RNDZ8XomyrWqegh"}, {"n": "Viva a Vida 2024 1080p", "id": "19TZlT2l8kdyZSmXFfy2nhDrP7G1RFXr-"}, {"n": "Vale das Sombras 2024 1080p", "id": "1mJ0UH6mFecAFh_vP_MLt2K7B4aFmNwRB"}, {"n": "Todas Por Uma 2023 1080p", "id": "1hxYjWY4o7yeTwtMKzFQmBeDe6C9BCsKX"}, {"n": "Terror no Rio 2025 1080p", "id": "1Akecb7HHkqzGRdSVT95vm387utBnERCs"}, {"n": "Sociedade das Sombras 2024 1080p", "id": "1RoTp6Q6eNWAZMANsHOXbY5j0Ps69ouAG"}, {"n": "Separados Pelas Estrelas 2025 1080p", "id": "1Y5H-HHBWtwJv9LsIhCNY3y2zOZILETGn"}, {"n": "Resgate em Alto Mar 2025 1080p", "id": "1khuRr55jvIq-JqTIg7sCbqwtCC0iBidc"}, {"n": "Pecadores 2025 1080p", "id": "1YJ3z5uYw4RwDu5YwhZWxd4E1DL30RRAk"}, {"n": "K.O. 2025 1080p", "id": "1LAmB5n-TqYfjJhtxFWoMaA2F3cRYr3eD"}, {"n": "IT Uma Obra Prima do Medo 1990 1080p", "id": "16iadGxvmFYEajasVDkD--wXQAevjuhht"}, {"n": "Invencível 2025 1080p", "id": "1DpFaSrjeSXNinRzfdVtefDD8VteeSIpb"}, {"n": "Improvisação Perigosa 2025 1080p", "id": "1XoVItw5KfvEYotwgswdZ7-gk68o8WZkl"}, {"n": "Hurry Up Tomorrow Além dos Holofotes 2025 1080p", "id": "1xzDazM_AaqufdB_vRuO3pt2nsnnMyF8B"}, {"n": "Homem com H 2025 1080p", "id": "1AP_HVkFBzQLJ4G3WmNobjQRCiKKUdrfo"}, {"n": "Fé Para o Impossível 2025 1080p", "id": "1vvfzx_IsjeeX7jbwqcZw1PcJu9wyI8hn"}, {"n": "Encantadora de Tubarões 2025 1080p", "id": "1ntgt9NFB00nkO2dfaZxmJRAT2OnudHNh"}, {"n": "Efeito Paradoxo 2025 1080p", "id": "1OEld0yxY4buwUidDDAjIbcX4u8_nXlhg"}, {"n": "Echo Valley 2025 1080p", "id": "1SR8WSlHQk9sAYrin0xPJS_VnqRkXQYPP"}, {"n": "Dose Dupla 2024 1080p", "id": "1gR8WKOeMNwRY-W1Gd8cUcPWWpd7B1ruq"}, {"n": "Diablo Caçada Mortal 2025 1080p", "id": "1xh6iwU-sAbfWv9AFbGQnv-mmMDY7N1bh"}, {"n": "Desconhecidos 2025 1080p", "id": "14cScz0KKLDKI8HcB7L_Xfr2oVYuL7iOT"}, {"n": "Desastre Total Cruzeiro do Cocô 2025 1080p", "id": "1aG39g8MvwT1UcAmT4KIlsSBk_Qsq56CH"}, {"n": "Crime e Sentença 2022 1080p", "id": "1BnlgVqhgFAssRQy-7drJdSqWxQ_LhvsF"}, {"n": "Criatura Voraz 2025 1080p", "id": "1d0F4SxYbfX9tGPDVwU01uf7Je1QqTQPo"}, {"n": "Coração Delator 2025 1080p", "id": "1d4uelTnvV2eoLcvlrn9tLwQIojn2OGlu"}, {"n": "Confinado 2025 1080p", "id": "1lMNRi0QSAXAl9xbu3NgeX4O70loQhOm4"}, {"n": "The Old Guard 2020 1080p", "id": "13iLEMMkt7QshRXBZzAZkLbXpNT5Vskyq"}, {"n": "Com Unhas e Dentes 2025 1080p", "id": "1bdIv2ic_uzCqBmqqzIR4axjMop6y7EpH"}, {"n": "Código Alarum 2025 1080p", "id": "1DYFptuOqnGkQkfoXemg-Xsh1cBFIL3Uu"}, {"n": "Chefes de Estado 2025 1080p", "id": "1Kwnmv9CyWBWBpMgvIJB7Z4xV1WBHTK80"}, {"n": "Capitão América Admirável Mundo Novo 2025 1080p", "id": "1u3JB7hgBvHFv0BYXFYsUqTf6D86UmpCO"}, {"n": "Branca de Neve 2025 1080p", "id": "1VPlWKGewKOVPHsKOpqg848UXyu5hYTDb"}, {"n": "Bailarina Do Universo De John Wick 2025 1080p", "id": "15JX91Dy_3YIa3J2yL3EtKz5OR8LeNUnH"}, {"n": "Baby Blue Assassino em Série 2023 1080p", "id": "1iX33mCkHqCtPkuti3AjNk1dBCMW4TEDJ"}, {"n": "Até a Última Gota 2025 1080p", "id": "1IphjM497on7gR9t5dqxIkB95RovKRF3n"}, {"n": "Apostas e Segredos 2025 1080p", "id": "18Pdny3t37XASxIrm3QUHHoCM-D34bawX"}, {"n": "A Mulher no Jardim 2025 1080p", "id": "1y3bTg8qfE3AGBpnCLwv9vTlcUAPxhd0W"}, {"n": "A Menina dos Meus Olhos 2025 1080p", "id": "1m0FWpy09CGyHPk7A4FVHxdXZxC7yu1I6"}, {"n": "A Lenda de Ochi 2025 1080p", "id": "1htRdBAwz49SpLUdoMcFb-oeqqakvJrrH"}, {"n": "A Fonte da Juventude 2025 1080p", "id": "1upUHryPeTrP0ERyXp8H7EUEhMxTzhZ2d"}, {"n": "1978 2024 1080p", "id": "1GW8hqEySF8MQDL1fgTb9CsI_C_pzYRW3"}, {"n": "Alice Junior 2020 1080p", "id": "1icJLqt_XgEXmryrXR3Gwhw39eK3rZIKL"}, {"n": "A Era do Gelo 1 2002 1080p", "id": "1FXgP9cb6w7uY_GJmgxvuyne8aVAgKTjh"}, {"n": "Duro de Matar 1 1988 1080p", "id": "19SwDnb0rKaO1_qJ9bM7zepHbVg1VvL-D"}, {"n": "Vencer ou Morrer 2023 1080p", "id": "1G4YItpxLWCKc91da3kklVtDxijVQcg4F"}, {"n": "Uma Mulher Comum 2025 1080p", "id": "1ngN0IJ5dEFpBFKW7RQbHngka4QpGWY5q"}, {"n": "Superman 2025 1080p", "id": "1qacwFqrRzKrvWW_eBUSeOUH4cIbgWyfR"}, {"n": "Ritas 2025 1080p", "id": "1NzkLXvIg7IgZvUBad9iX-w0rEtbqcvjl"}, {"n": "Ride 2024 1080p", "id": "1B-IzNUPBHYNeo5Incv-pDcn9-hEHevDB"}, {"n": "Prédio Vazio 2025 1080p", "id": "10OtQDqnAbrAebuj7VKTgqHre57_1ZT8o"}, {"n": "Os Malditos 2025 1080p", "id": "11p63aoAbukSH0PPbcXmkRM5bUeZPZD8Z"}, {"n": "Operação Vingança 2025 1080p", "id": "1zhn8LbdEbsEYnK0ScjqTJQVeCJjv94sH"}, {"n": "O Último Rodeio 2025 1080p", "id": "1Hwm_6dw1BkdhmdMB8eVN7Vn-I7vMzFly"}, {"n": "O Papa que Venceu o Comunismo 2025 1080p", "id": "1n6e0dKcIwZALUAB3zzXARDKB68P07vAm"}, {"n": "O Aprendiz de Serial Killer 2025 1080p", "id": "1XJo_ZL1HkiP3lWKRLPUDBdDhNTlfcmQS"}, {"n": "Nas Sombras de Paris 2021 1080p", "id": "1YVgNj2kfRfvpfVPK9T9Q65GSdqj2vLYK"}, {"n": "Nas Areias de Ibiza 2023 1080p", "id": "166lN27RsxVL2LP037J8jUdOa09PTzAy1"}, {"n": "Morte de Um Unicórnio 2025 1080p", "id": "1KL5htCGJgDtsACIK23GU79s9zg5IEUv1"}, {"n": "Missão Titã 2024 1080p", "id": "1htKjE7P1oEljOgLcWY_M6F8j_RW4qKrL"}, {"n": "Missão Impossível O Acerto Final 2025 1080p", "id": "1xU6pB-349oDWmHCrcQwBXKZLmdCV1EXQ"}, {"n": "Mirador 2021 1080p", "id": "1dwREwrkQ9Ey2g4pj72qA5UVJNSKVdTDq"}, {"n": "Meu Ano em Oxford 2025 1080p", "id": "1wquamny1rqpqkPXAIRVVdJ5dpvzMzWnN"}, {"n": "Megalopolis 2024 1080p", "id": "1ydUsFSTP8ruV8J4Tip0CiaVVCDmQCKzG"}, {"n": "M3GAN 2.0 2025 1080p", "id": "1qCVMVWvgRzMmcdnOdFVGQRJmBNg_CtNE"}, {"n": "Guerra dos Mundos 2025 1080p", "id": "1TUVfFq-SNzmniv_OIRr3pkRc76x4T4Xd"}, {"n": "Frio Nos Ossos 2023 1080p", "id": "1E9MZC1528mPY8DnSk_PXUezxosVxjeGI"}, {"n": "Extermínio A Evolução 2025 1080p", "id": "1NZfMlHlQYGWbf7LcAux2DEEHfmVFAYwn"}, {"n": "Dr. Semmelweis 2023 1080p", "id": "17fw-O0DMA6Bt1HLKVO-22VXfKbLTBtFS"}, {"n": "Diamantes Roubados O Golpe do Século 2025 1080p", "id": "1mzJI3SzaDuahyoWvKNB1hm0Fuqp62H65"}, {"n": "Cópia de Segurança 2023 1080p", "id": "1zfxz34nV4DE13dILxpgec697J8STB0QA"}, {"n": "Como Treinar o Seu Dragão 2025 1080p", "id": "1DpwpXuBAB8Y6CUA6k6buzjZZK587qB_5"}, {"n": "Código de Ética 2023 1080p", "id": "1_8UADVutEQ0VcPkofhqOqvfQrlHg-r_t"}, {"n": "Cancer com Ascendente em Virgem 2025 1080p", "id": "1xwgswqEOGFW5UXmdKaktP0yZz2xStEF0"}, {"n": "Anticristo O Exorcismo de Lara 2023 1080p", "id": "1R9K81VwyejtyyY43EFdUwP_I6BHKEXfz"}, {"n": "Anjos Do Desierto 2024 1080p", "id": "1DjZxIrYNWpbNqqKslr1TbNBewMVrfl-v"}, {"n": "A Única Sobrevivente 2022 1080p", "id": "1UDkwsGmrMJ-z54PrCuhN8sjN3NF02HVQ"}, {"n": "A Última Missão 2025 1080p", "id": "12ZbVhXQ07xrMlT50XPfkyC0xffIiav9-"}, {"n": "A Cuidadora da Mansão Garret 2023 1080p", "id": "1EgN1EtNnN_KPSqHMsy4Z9qHUjh7_He9C"}, {"n": "Uma Vida Honesta 2025 1080p", "id": "1sf6XVWa2NL22dAqwbNrkcNrASrnEJWpp"}, {"n": "Uma Tacada de Mestre 2020 1080p", "id": "15AhLcN0SVi4-fCI_4ihmlOfmwiZlTdPE"}, {"n": "Um Homem Abandonado 2025 1080p", "id": "1BIJKko5x9USrxpoGXIWWKDImLPxOGNyL"}, {"n": "Um Alibi 2022 1080p", "id": "1uPsDIukyB23qN67q9S5KCKF4ih6QIIar"}, {"n": "The Mouse Trap A Diversão Agora é Outra 2025 1080p", "id": "1Yd01pT48TPHRNeWUOiqksB-bMb0LmhMW"}, {"n": "Quero Você 2025 1080p", "id": "1qKMp2wcLdU7WmFycWpvJXe4HivlGqrs-"}, {"n": "Perdão em Tempos de Guerra 2023 1080p", "id": "1Y3e1Kegi4LDs308byS7Uugfh_i0Et-la"}, {"n": "Os Pequenos Vestígios 2021 1080p", "id": "1r6-MwAyK3ETmEfVkfBM3WKdcISX6tY2E"}, {"n": "Os Bad Boas 2025 1080p", "id": "1Sx1l4fbOdD70j5xv8ar63vGR_sREwxzP"}, {"n": "Oh Canadá 2024 1080p", "id": "1WuMXUqXZBoWoehISABDs0XXnJLQ57hSR"}, {"n": "O Grupo 2022 1080p", "id": "1hMK42EyaIcr2s76EYL4UjrsYBP7HlniB"}, {"n": "Madame Durocher 2024 1080p", "id": "1ob-jchCpRhSaCi9Mj4oNKeRJqedjpuIT"}, {"n": "Lively vs Baldoni Escândalo em Hollywood 2025 1080p", "id": "1uk5YhsUtGDlgdG5u2yk-LkNEGggxXD5O"}, {"n": "Ladrões de Ouro 2025 1080p", "id": "1XgWOCkyupOCXNg4kmu35zulERpki4OOL"}, {"n": "Jogos de Sedução 2025 1080p", "id": "1XXm3lCEZgJvxoQQLrxa2pjLvlJM0l69Y"}, {"n": "Enterre-me Quando Eu Morrer 2025 1080p", "id": "1Qa-uOkMswxgri1qBEH9LWvnhbP7og_t4"}, {"n": "De Volta ao Velho Oeste 2023 1080p", "id": "1_ZWRhcqCu8eHdxuhGBFIwsm1Tgpj3xjN"}, {"n": "Brick 2025 1080p", "id": "16xKeCyN2Ioz_eNLZJ_ZWDs65sw2NcnvX"}, {"n": "Além da Existência 2022 1080p", "id": "1xTiMiWT29mdAxoAsoVFMb7g6gQDsNjoj"}, {"n": "Família Pero No Mucho 2025 1080p", "id": "12-FpVZMUntERawIBeEDcVq7p9nge6arx"}, {"n": "Caminhos Cruzados 2024 1080p", "id": "164oPq-hqOQic9dU-e3FKD76CV1yjbcfF"}, {"n": "Meu Próprio Conto de Fadas 2021 1080p", "id": "1pnIysqtexHRQSMeGsTUTJO1TBRPM-4IS"}, {"n": "O Peso de Um Sonho 2023 1080p", "id": "1yFsAbxZtRgfzP-XNEkCZ7_QHoqEK2L13"}, {"n": "Conversando Sobre Round 6 2025 1080p", "id": "1rQBkQHDLwAZoaQzsz9t8IKZh8994qbO6"}, {"n": "Resgate Suicida 2024 1080p", "id": "1dYcsoucyR1i0KEKboJJWmAnEcu0ZkXeM"}, {"n": "O Banquete de Casamento 2025 1080p", "id": "13w0k3xYzgvfiEkUuzdE5MN4Imb85WGnf"}, {"n": "Desastre Total Garoto do Balão 2025 1080p", "id": "1cmy2EqKtLUDwYr4WPaXHMNl_rdMifmiY"}, {"n": "Madea e o Casamento nas Bahamas 2025 1080p", "id": "1sni95oNqKh75aKnIunAEsoREuLbagfeY"}, {"n": "A Seita 2024 1080p", "id": "1oJaaa6SRapzTvA6jjdaWHwCUMK7gvAM9"}, {"n": "O Amigo 2025 1080p", "id": "11cp7ScexHPAe6a50rrg_nyJ5rRv-3iSI"}, {"n": "Tudo Sobre os Levkoviches 2024 1080p", "id": "1KgZG6EPlqVrQEEMlBMBPOM8afCQoPxzP"}, {"n": "Motorista de Fuga 2025 1080p", "id": "1UjkfG_qodMiOWWOi9LhQiR1vEgQj7va7"}, {"n": "A Ilha da Boa Esperança 2022 1080p", "id": "1KedNAE1Ez4LlF0mGAK0YAan0OXSYXVBt"}, {"n": "Uma Vida Inteira 2023 1080p", "id": "1FabhLUr_bDR1dxgVHih7GTUG7hq0nwkR"}, {"n": "Zona de Exclusão 2023 1080p", "id": "1X7vWyeVwUiLNsWb22im3biGqgu62NY60"}, {"n": "Onde Está Rose 2021 1080p", "id": "1vc0Ri_Ouodqwtk5uifb2u3ZQUVq_cgI7"}, {"n": "Os Conflitos na Irlanda 2022 1080p", "id": "1HW9Ac3NUeglDxdOQMVCiYCgt-PZWxIoc"}, {"n": "Impiedoso 2023 1080p", "id": "1Vrg1YFqN8caP6YF9bSPrDKTCWOCNpk0c"}, {"n": "Uma Última Viagem 2025 1080p", "id": "1G-b1-s3xQ9potfVDzYN05NcMwCJVEhfv"}, {"n": "A Freira 2018 1080p", "id": "1EUu8jHEO-BbGhe6cNZ1p2jj1EUQ0gtcf"}, {"n": "A Grande Entrevista 2024 1080p", "id": "1EJ9tcm_q9t7vHkro7GpAHWtdkieneAwP"}, {"n": "A Herança de Mr. Deeds 2002 1080p", "id": "1uA2YAgT1UukvZ_INxuZN_Es5LDeizu_R"}, {"n": "A Hora da Virada 2005 1080p", "id": "1wlX6SsAcXn6aY_JUOx3xlR0x4gAcDUiu"}, {"n": "A Informante 2023 1080p", "id": "1KCtatX6gUpXcyWA-5fSDUT_gWuyKSgFv"}, {"n": "A Lenda de Beowulf 2007 1080p", "id": "1BCyMWGKPyEpVNt4KhyJZqiFvVNSH0V3u"}, {"n": "A Lenda de Candyman 2021 1080p", "id": "10_LCHr0pp4hgnS_vJpYqugIfFHJk_HEh"}, {"n": "A Lenda de Tarzan 2016 1080p", "id": "1Ilgg47Gc_zs4Q1LsWnwy-KV7TsEc6mzh"}, {"n": "A Lenda do Cavaleiro Sem Cabeça 1999 1080p", "id": "1ECK7iFN03aTPGoe3e0AfNErLzgavRl6l"}, {"n": "A Lenda do Cavaleiro Verde 2021 1080p", "id": "1lie5cVWNY75m8kYmzDjlh03JGy0BUw1C"}, {"n": "A Liga Extraordinária 2003 1080p", "id": "19OsdqbuNWIH072Up_IIDaj0f7JXzUa20"}, {"n": "A Luz do Demônio 2022 1080p", "id": "1Eb5VYwQHBO1zmLel-CpMl7tWtWZX_Une"}, {"n": "A Maldição da Casa Usher 2020 1080p", "id": "1K2tHMnXHNvBfVM4ewVL0Gd92qKM00CO1"}, {"n": "A Maldição da Chorona 2019 1080p", "id": "1rQInn2D99_rl3uFgFkovXiYrZBkDiExF"}, {"n": "A Máquina Infernal 2022 1080p", "id": "1PvA5yUaKESCTWT4Wxl2JL75g5pMji7pO"}, {"n": "A Menina do Mar 2024 1080p", "id": "1nhZVrjKKyUbQG1LPNQAmfss3rPbd6ASH"}, {"n": "A Freira 2 2023 1080p", "id": "1mBangvJr19Fs7ykKioTFp29T-r6mIDEO"}, {"n": "A Fera 2022 1080p", "id": "1iobzHlynrqzcdiqyb5D8j8yI9es4haXw"}, {"n": "A Escolha 2022 1080p", "id": "1NTS0A3FNhy-Uqu7xFghMVvvwO0JGlGSL"}, {"n": "A Era do Gelo 4 2012 1080p", "id": "1ZAVXclj4vNE64NcO9TePXNKvS8IQKfvk"}, {"n": "A Era do Gelo 3 2009 1080p", "id": "1PPOifSF9wxeIfXFR-TDBOjiB-YBgOIWl"}, {"n": "A Era do Gelo 2 2006 1080p", "id": "1AWbKwoqizz30A4qLO0uMeAkwp6oTwhFZ"}, {"n": "A Culpa é da Estrelas 2014 1080p", "id": "15QzN-DoW6SnKhBL-tBhLUuZEhpTu9AKX"}, {"n": "A Chamada 2023 1080p", "id": "12MbrhDCJR7Uc8LAqMFt4OxZ1an8uvtN_"}, {"n": "A Caminho de Casa 2019 1080p", "id": "1qKXXwbjDXqHQHUVYEMLI6R5BfcmXmWwn"}, {"n": "A Bela e a Fera 2014 1080p", "id": "17N6f-pcdksshHNZzjaapsl4tgdxcb11L"}, {"n": "A Baleia 2023 1080p", "id": "1KEpS0hoO4FsNRZtthB0INMdWWSWLreOF"}, {"n": "A Aranha Negra 2022 1080p", "id": "1rtQDqlwkxg7xL2g_HBe5O_aqsrDnxRWW"}, {"n": "1978 A Batalha de Kruty 2018 1080p", "id": "148tGYOdXDjg1mV3frCZppCw43q1cre6Y"}, {"n": "1942 A Batalha Desconhecida 2019 1080p", "id": "13Bdqie4z6264Qq5X6aSEVal_5QKe05YH"}, {"n": "300 2006 1080p", "id": "1EgVv2dWy8GdEhAXIN2-v0PoQjU-Q-HWn"}, {"n": "57 Segundos 2023  1080p", "id": "13NHDC_urBUrGajDrZjy5rH7KhQ2madL3"}, {"n": "8 Mile Rua das Ilusões 2002 1080p", "id": "1unZXtegHeYRBsJzXkeeGQ8TGSAmjHJ--"}, {"n": "007 Quantum Of Solace 2008 1080p", "id": "1XsZBsGpDIbUDIXwLDKAqMUFzVeZZubVn"}, {"n": "007 Contra Spectre 2015 1080p", "id": "1Omp0MlzgaTOaXcokgd0wpHwyaeJftttw"}, {"n": "007 Casino Royale 2006 1080p", "id": "1ipvUaWahqnKDp4l2QaqF-M13nMpZhPb4"}, {"n": "A Filha de uma Ladrão 2019 1080p", "id": "1upUnnoA_O8xcfTM5UGyXgYsdS-yG-lU2"}, {"n": "À Espera de um Milagre 1999 1080p", "id": "1rMqV8P73qJjxtj7Vi_cI5LIhVJSf8ug2"}, {"n": "A Descoberta 2017 1080p", "id": "1TY1BA316hJhUNo4CkXek6urW_dfs6EJt"}, {"n": "A Criação 2023 1080p", "id": "102iKAUN-JsL_-PUhymgy2WFD5WOj7Ddk"}, {"n": "A Conspiração Consumista 2024 1080p", "id": "10AfyBR--1pp4w8gGLA9PjVVpfLsJzkn2"}, {"n": "A Colina Escarlate 2016 1080p", "id": "1lIAN8FlZu5P0ECIRVDLVA7IyDDmgLnUf"}, {"n": "A Chave do Problema 2023 1080p", "id": "1wbZqp1-GVnnQkp5tqLjBBGbxbOVbLIWn"}, {"n": "A Caçada 2007 1080p", "id": "1_aHL6im7y4uxmfBDOdTYNVt72aUO_shS"}, {"n": "A Caça 2012 1080p", "id": "1zZUWQZT1jc5UQQn0g8pFI-N_I1Fz_JYh"}, {"n": "1992 2022 1080p", "id": "1CM7Fp9GD6UiFQZfszWRxo7hvgmA74rKl"}, {"n": "1917 2020 1080p", "id": "1RyJyhLFt3VtHAxOQs9hPfsRARVS45wiT"}, {"n": "20 Dias em Mariupol 2023 1080p", "id": "16CkGOMNGZ_nIgL7LMAhJeszJJbnONxqU"}, {"n": "007 Sem Tempo para Morrer 2021 1080p", "id": "1GZSMKxO-46rwJXmkX-84vaZRkkJuQ5o-"}, {"n": "Ace Ventura O Filho do Ace Ventura 2009 1080p", "id": "1n85OWYPeTyX4LyB4Wf8JzTIq05bg69SC"}, {"n": "Ace Ventura Um Detetive Diferente 1994 1080p", "id": "1OkWd0kJLK-aRal2nzy5hfJaahB1Pw3O_"}, {"n": "Ace Ventura Um Maluco Na África 1995 1080p", "id": "1qVUzdyhKbiC75SM0PJEQJxVOw81XdhjQ"}, {"n": "Alien vs Predador 2 2007 1080p", "id": "1_dsrJqjyV8V-4VAhnrOXOWywXbHZZ_wf"}, {"n": "Minha Mãe É Uma Peça 2 2017 1080p", "id": "13hYCUUexvPrHg7QroalpSMwUdlIGmJYk"}, {"n": "Cowboys & Aliens 2011 1080p", "id": "1hox8GQdC2QBuEd9l8QO6_NoDtlDfZTSB"}, {"n": "Agreste 2023 1080p", "id": "1EgOctkysX8nREkC4iHGQPCrcyv42Zbmt"}, {"n": "O Grande Mestre 2008 1080p", "id": "1vajGRF6v9rSTSDJF-29NJW8lxqIOddS9"}, {"n": "O Grande Mestre 3 2015 1080p", "id": "1Y_6sq_fxszujVEXloY0j1r8ZmMFGoa8y"}, {"n": "O Grande Mestre 2 2010 1080p", "id": "1cAnY8u5aITV7TggMOGY5VRUNbrjCJBsr"}, {"n": "Blade 1998 1080p", "id": "1j0wAoNLQEVjO1fUWVWTt78lJ8ivbs23n"}, {"n": "Blade II 2002 1080p", "id": "1-pW3RXX0Hj_4RCViqB2K7iAF4WKzOpjg"}, {"n": "Blade Trinity 2004 1080p", "id": "1WMgZ7Ytn0kPi13sdQ7orDvB0A7khv3AN"}, {"n": "Matrix 1999 1080p", "id": "10AO1cXrmixnseH0iCFhCYd6ks-CrSHiY"}, {"n": "Matrix Reloaded 2003 1080p", "id": "1sgUvhz0BO3eC-996VNvKpQnwvzm3lRRJ"}, {"n": "Matrix Revolutions 2003 1080p", "id": "13yxj0yNSNY6QU-DjYIg_M50lWMxR4dU4"}, {"n": "O Coletivo 2023 1080p", "id": "183HalAI1f5NgjbJqmxiFLpRnAo81DMNS"}, {"n": "Chevalier A Verdadeira História Nunca Contada 2023 1080p", "id": "1kFDNg738uKXHfiEdYu_RHRkatpLjVUeG"}, {"n": "Gotti O Chefe da Máfia 2019 1080p", "id": "1enebOWHjoNAVxYMRE3kERNo7pDybscLp"}, {"n": "Dinheiro Fácil 2023 1080p", "id": "1dmPz2RrQxGAPqptrF_pOPYmmC4IWS8d7"}, {"n": "Maestro 2023 1080p", "id": "1j5F-3plHhHIQPDs6QNMCJBL2VYU191S-"}, {"n": "Afonso Padilha Alma de Pobre 2020 1080p", "id": "1J4RY_yzt5df_pxIVQhquW47C1yUW6CYr"}, {"n": "How to Have Sex 2023 1080p", "id": "1pM0W6Gg4lZiCkwz6TmgjXoubpH1UW_UF"}, {"n": "As Tias 2024 1080p", "id": "1GPAmfrGOpGuAf4XSPZZICo_UYiA0Ylls"}, {"n": "O Divino Baggio 2021 1080p", "id": "1yTntAaoLPwbtIJGhbjFElQEtOBP-bhNY"}, {"n": "O Rei da Escócia 2019", "id": "1Vh4ZnGunmxDXWxbWSkBBZRv-Fn-Y63y3"}, {"n": "Downtown Abbey 2019 1080p", "id": "1tKwz7Bx6OflhXokoI1fgsqPCl2YX5ddA"}, {"n": "Caçadores de Obras-Primas 2014 1080p", "id": "1df4XQBJFMrjc02JhO82tRCL-_ZnLRP_k"}, {"n": "O Jovem Messias 2016 1080p", "id": "1n0wJrCv9tUguB3WYspsl9hc1vqcsJnQq"}, {"n": "O Oficial e o Espião 2020 1080p", "id": "1gJkgLrGA0ARQdq7gragcWKMYAfUJV4N6"}, {"n": "O Céu da Meia Noite 2020 1080p", "id": "1pHXFwnqSGRcbknNyvoTg7zhgTE5VP05x"}, {"n": "O Fantasma 1996 1080p", "id": "1ou-kM_KkGgxoFn3Vhwj9PrjKmsxQwBGf"}, {"n": "O Desaparecimento 2018 1080p", "id": "1X4PkWohPJaChmp19f9RQSgoIjdbffdPw"}, {"n": "O Juiz 2015 1080p", "id": "1gJ1443fVaGvNp4CW-ZBwQhbH81LwQrOi"}, {"n": "O Escandalo 2020 1080p", "id": "1AnDYE0sKZUzQ8DfN3xf63EvFbm5yXKHM"}, {"n": "O Pacto dos Lobos 2001 1080p", "id": "1OKUStWY-DEbS_39OzEYvIDRk4p6ktc2F"}, {"n": "De Repente é Amor 2005 1080p", "id": "1-fvzl4vTRL8ELFb2fs4WuO_tfwoijuxO"}, {"n": "O Estrangulador de Boston 2023 1080p", "id": "1x1LgPw5TVqLWT43QitVtfJ8h1GMQGV_P"}, {"n": "Mussum Um Filme do Cacildis 2019 1080p", "id": "1YIRjcSs4K6VLP7gReIk9JUaihwA6woUr"}, {"n": "O Desconhecido 2022 1080p", "id": "1zZt1godWJKLzq74epbVpHFcCTODumhDA"}, {"n": "O Espião Inglês 2021 1080p", "id": "1-GRJKhTZwHPbJbxLOOWXbBBwXI_n6SmU"}, {"n": "O Rei 2019 1080p", "id": "1obLhVy3YWbin7swjncHYS7Nd5BF6WbBA"}, {"n": "Aberrações 2019 1080p", "id": "1A88AB5Y7Sj3QDK-y3GVmbD55Aeqrjn-F"}, {"n": "Ataque dos Cães 2021 1080p", "id": "1nthx50wGTK_CwVttZYG5H1zwNC3zIEkO"}, {"n": "Herege 2024 1080p", "id": "1Q-fg0SNK8i3ArjLgI7ecAu01O-CjzsgA"}, {"n": "Número 24 2024 1080p", "id": "1vefCGg7ekgOMIHAKPfPg9hmzA3I5tIFd"}, {"n": "O Homem Que Quer Viver para Sempre 2025 1080p", "id": "1ErO50itxigTjoqvuqJuKirQVmBGZCFpA"}, {"n": "O Bloqueio 2022 1080p", "id": "1iKlyTY0Yds_-aNGcuhBQt41t1eWMYkgW"}, {"n": "Jogo Justo 2023 1080p", "id": "15ibziMvEa0xurXsh-PuZtbo6GMOFtmg2"}, {"n": "O Menino Que Queria Ser Rei 2019 1080p", "id": "1g2--YYNh86jX9O8uX-jbACPLrsn2cGTo"}, {"n": "Lara Croft Tomb Raider A Origem da Vida 2003 1080p", "id": "13RnAZzmU_zC8Txscyxk9HqqO548cbOni"}, {"n": "Não Feche os Olhos 2020 1080p", "id": "1YOaVTKv1pelfW7az06EUfEmIMGPvAE9u"}, {"n": "O Lobo Viking 2022 1080p", "id": "1GlSagIOpoWKHGr5Krr4A2JRgbVzEODAs"}, {"n": "O Protocolo de Auschwitz 2020 1080p", "id": "1fAYV8jmzfmhaGf2Rf26aS_XUdDLRyZA4"}, {"n": "O Grande Hotel Budapeste 2014 1080p", "id": "1WUOPtl9mL3T2S1HGKygDz5DZvu_te2yK"}, {"n": "O Piloto Uma Batalha Pela Sobrevivenci 2021 1080p", "id": "15fvJFvCQAIhwyyJM0pVNpRzD-WLIbW9w"}, {"n": "O Mensageiro do Último Dia 2020 1080p", "id": "14M3f7tkNe_zOXy67u2ZIVWqzPXSrCiiT"}, {"n": "O Homem que Inventou o Natal 2018 1080p", "id": "1nvHd0ILJ4Gbwr9mssqFdAQvwgk7rLaHt"}, {"n": "Encurralados 2023 1080p", "id": "12oEd31pkPwNfvPSq8On48Cv_C76DhUJS"}, {"n": "O Preço da Verdade 2020 1080p", "id": "19VK4W3tkbILAg4FiJuSXclm_xzqgIF_Q"}, {"n": "Bar Doce Lar 2022 1080p", "id": "1ryyYWWpaNhL99-Mrpm7rhN6HzUE3AbmV"}, {"n": "O Imperador de Paris 2019 1080p", "id": "1fQEppxpK-4MRk0xH2hoGow3wrJxp8itv"}, {"n": "O Rapto do Menino Dourado 1986 1080p", "id": "1Mt-2Amt6QM-gGoSJmRGSXuvxW35dLjbd"}, {"n": "O Jardineiro Fiel 2005 1080p", "id": "15g5OyjLqucyUc4NEi3HgQc3Ec3tSFpjB"}, {"n": "O Grande Tsunami 2021 1080p", "id": "1fzQiVb7qSt1nCFrhmB9jjIFTzUTpXKj7"}, {"n": "O Golpe 2019 1080p", "id": "1lHF0x0wl3J_pgsMA0VrcRhrp9S4enJ_k"}, {"n": "O Menino do Pijama Listrado 2008 1080p", "id": "1zElDnSZmEtTKYxDnY0BNDjDBeY_D2W4Y"}, {"n": "O Predador A Caçada 2022 1080p", "id": "1fmxtA7ZqjEyR6dlP9079DZFMuMl1_5lS"}, {"n": "O Monastério 2022 1080p", "id": "1WaucvSl1viApINjQNnN_OBs1hPqaS9vl"}, {"n": "Lara Croft Tomb Raider 2001 1080p", "id": "1wkidHqIs7j1Jv3Lp308RIuQ2_gYqIt9x"}, {"n": "O Farol 2019 1080p", "id": "1y4hR4tRvsOj1huqSRD3T-DSBjf60GS9W"}, {"n": "Jornada Para o Inferno 2023 1080p", "id": "1xgsWBYj8zOI69yFr9PND4hsaY4qzbaYY"}, {"n": "O Pai que Move Montanhas 2021 1080p", "id": "1ZZ4tkwQ5PaxyWgfar8mzeLkuqEZ6Zau9"}, {"n": "O Recepcionista 2020 1080p", "id": "1jW8EMNFV0XiJwgEHs5agfaNQUaRVOM2O"}, {"n": "O Projeto Adam 2022 1080p", "id": "1CQRGL_ZQskq9dHqvg6tCXajrVwhbAEcL"}, {"n": "O Pior Vizinho do Mundo 2022 1080p", "id": "1GqGED_vC_FEkOc8HWuFDqM8ahP8sZ7E-"}, {"n": "O Menu 2022 1080p", "id": "11RZU-5I2Q6nIotRI9VIXF883ZWevbfNA"}, {"n": "O Mago das Mentiras 2017 1080p", "id": "1GGgq87cubUhnbrtrrzjMFiY2JNrIH6DZ"}, {"n": "O Livro de Eli 2010 1080p", "id": "1hti9WheYnIiwsxVNIJDEtQjOKedVltNS"}, {"n": "O Incrível Hulk 2008 1080p", "id": "1vjx39Ja68hDlCOSgY7acHg_UDh4mMT5o"}, {"n": "O Golpista do Ano 2010 1080p", "id": "1mG9dSxCKh2iFWduwQvSxMcl7vK-sGO_U"}, {"n": "Legado Explosivo 2020 1080p", "id": "1RzVGtBP6jaAJJp4blPtswkkn3XmaHFWN"}, {"n": "O Confronto 2021 1080p", "id": "17tCkA5EcnbbS2t-SVdYRBwFOG75ZBtDB"}, {"n": "O Caso Figo A Transferência que Mudou o Futebol 2022 1080p", "id": "1urUIiLbhQnFScqmK3JI53kSQHjgdV4ll"}, {"n": "Bons Companheiros 2023 1080p", "id": "1_ZdwXR0x1PcS0_DmJrtrlPKsrYsQFU_K"}, {"n": "O Maestro 2019 1080p", "id": "1gE6jZFXGY6Ef3-1TrB5vZ2FtPaykVxxk"}, {"n": "O Profissional 1994 1080p", "id": "17WDXdrKqTZlPGrKIOAUxX_51aEswwG09"}, {"n": "O Predador 1987 1080p", "id": "1LQNgSc2XNXY4Z6qZ7EUEmnZpkG0lASb4"}, {"n": "O Irlandes 2019 1080p", "id": "1p_wTxqisWL3vLSGx0kDujq-EveqqLJqG"}, {"n": "Impuros O Filme 2019 1080p", "id": "1JA0PTbgZYdxwp4K7U-Ftx2ts5VpHvUf4"}, {"n": "Amsterdam 2022 1080p", "id": "1YUFVntEiuZ1CA4iGj-r8ouJTRNS79GjR"}, {"n": "O Dilema das Redes 2020 1080p", "id": "17nx3sCtEy0d8z_B7uvKWywBsKxPYnNCH"}, {"n": "Friends A Reunião 2021 1080p", "id": "1ta-j-maWYYYCSApEe6JG_jrDjjy8mfQy"}, {"n": "Missão Babilônia 2008 1080p", "id": "1xC2rU-WJ-CatbEZIq53EXl6TmhkpFSA4"}, {"n": "O Culpado 2021 1080p", "id": "1eU2RsyZB25kSy5iAkOb74Dbp5qspLK-H"}, {"n": "O Curioso Caso de Benjamin Button 2008 1080p", "id": "1PMv65c-NUi5qxVXrzzsFgWiou-VU-1Dh"}, {"n": "O Dia Depois de Amanhã 2004 1080p", "id": "12zRhJn8iBVIBrDL7TQ84_8HogyCbG15a"}, {"n": "O Ditador 2012 1080p", "id": "1CM7W6W_AXo1zaFsmJQWt29bGdO_3jpJ4"}, {"n": "O Enigma de Outro Mundo 1982 1080p", "id": "18VUCMjvXMBcfwx_uMI4ZiyJ6HM5rn63A"}, {"n": "O Gangster o Policial e o Diabo 2021 1080p", "id": "1bkmohWOoyTf0zk15AXXdjevD__Mliujc"}, {"n": "O Grande Truque 2006 1080p", "id": "1M3rj2iLTclHL-B4LPfCTZQTu-49zGxBR"}, {"n": "O Labiritindo do Fauno 2006 1080p", "id": "171aPON_1oat0COkh3iVkR2HK3mUdXWY1"}, {"n": "O Grande Herói 2013 1080p", "id": "1tqWmSGp-v7r1jk6_GohKWOpJ4lKKCQzd"}, {"n": "O Iluminado 1980 1080p", "id": "1mKMGtgLtmsdmlSU6mOvAzD-UVUlTNyoW"}, {"n": "O Mundo de Andy 1999 1080", "id": "1dMFAnsgiaj1xLyqThN5fab3J8PLJzIxB"}, {"n": "O Diabo Veste Prada 2006 1080p", "id": "1tBunmQXIyMwcm6ILyyinc5TqavTIAaSB"}, {"n": "O Impossível 2012 1080p.mp4", "id": "1Q0GzSPFbL8eeesxB6S6oAPhdZaMXTlLq"}, {"n": "O Homem de Aço 2013 1080p", "id": "18WKTHTt9449PSiHeBohS_5Qdox1e4dWO"}, {"n": "O Alfaiate 2022 1080p", "id": "1Iot9AGV_4hCuMcUP3Ybj4EQPey5Wslht"}, {"n": "Na Palma da Mão 2023 1080p", "id": "1P9UfI7_etoTjKRgpflB1HgWD7Tn9EN8_"}, {"n": "Moonwalker 1988 1080p", "id": "1YhI5PlR3BUPN8jDH23qqrqDfaFqdGt2w"}, {"n": "Meu Pai 2020 1080p", "id": "1CBeCAtmnmxypCAPMIP_LIaP5_PeKxj0E"}, {"n": "O Caso de Richard Jewell 2020 1080p", "id": "1OTYaiXDHP4Xx99Ot7yh6-cxhEzcTsSaa"}, {"n": "Lanterna Verde 2011 1080p", "id": "1LscFEUKjoAARVEdKLz_zQ5ez-r83l3lM"}, {"n": "Jackass 4.5 2022 1080p", "id": "16a5qFUfAz3BKxSf3v31CvlphUg1TnLI9"}, {"n": "Dolittle 2020 1080p", "id": "1AiMt2pAE1CoK3Ra8cVqoK2rwESdUP4qj"}, {"n": "Noé 2014 1080p", "id": "1tUPBsXZRWKYz8DuUZWYeAVdrUIi7utKe"}, {"n": "A Mula 2019 1080p", "id": "1PfRUd0tSYxfoTd6ldGehaeg25lzFrjN0"}, {"n": "Notre-Dame em Chamas 2022 1080p", "id": "1Zyu4_EPxMKVofpl2cvl4xtm2fKJQ3q4n"}, {"n": "No Coração do Mar 2016 1080p", "id": "1tCn_7BdWt3s7ZZpt6R2liOcjzaEFePPd"}, {"n": "Nem um Passo em Falso 2021 1080p", "id": "1YvcaQe91RYR-DeCt_HWE-yGGB3HhGki4"}, {"n": "O Candidato 2018 1080p", "id": "1anLYGN0gAoWiCKbzmKFxN1quf1Iw2ttM"}, {"n": "Jogos Vorazes A Esperança O Final 2016 1080p", "id": "1iGeP3wtfrmOUDMYFzR8p2Ph8DICIqwP6"}, {"n": "Bem Vindo A Selva 2004 1080p", "id": "1NkPW74UlAFFzXU0NvGZgK0T1iKIO1GN-"}, {"n": "Babel 2006 1080p", "id": "12EEjFo7iGrnjpfh_n0rajBm8PSM5oIOH"}, {"n": "Gabriel Medina 2020 1080p", "id": "1s3rkK5RNkLc8aBK59FoSRtuGXeLLfO6K"}, {"n": "O Código Da Vinci 2006 1080p", "id": "1yxIiAN0oNgftcMP9dvnJj5iDw6rXvcgV"}, {"n": "No Limite do Amanhã 2014 1080p", "id": "1n-l_MofRRIncb_ZVlESP5Tnq8dbliMAL"}, {"n": "No Lugar Errado 2022 1080p", "id": "1gdn9wMx-avGqf6GVVZzRzTXzZgFahk0T"}, {"n": "Ninja Assassino 2009 1080p", "id": "1hSM_sul-6EVy4uwY0jCbtFyxnFovC2B6"}, {"n": "Limite do Mundo 2021 1080p", "id": "1Hti5Cu9qPYgrl0R9OouDaxmAajyUX4qp"}, {"n": "Jackass para Sempre 2022 1080p", "id": "1P39Aie1LlwDKrIfaR9GRLqanH-D1eaVf"}, {"n": "O Chamado da Floresta 2020 1080p", "id": "1r7OA1RfthKlE1TYWo1hWPoiAnG75q4uU"}, {"n": "O Banqueiro 2020 1080p", "id": "11Ypm3zewKNCcL9JLA_BnqU0Pk0S23MiB"}, {"n": "High Life Uma Nova Vida 2019 1080p", "id": "1ye6-rMWrSi18Ltos6w6CDYGQUORFY07Q"}, {"n": "Amnésia 2000 1080p", "id": "1YDE_qQg4D2HvDYAbgQ3rwedUuWzbW7_J"}, {"n": "O Clube dos Canibais 2019 1080p", "id": "1YzpdB2CCeZVmj1YoF8mn1owtMYbWwJIa"}, {"n": "O Ataque 2013 1080p", "id": "1E7WP1gage-ZkjjeyzutcM-G2D8LmUAli"}, {"n": "O Bem Aventurado 2018 1080p", "id": "1Xnf_uqQrKykf6Ep9aYKGRfVaZR8O_AIv"}, {"n": "Mistério em Paris 2023 1080p", "id": "1pBj2SIEpxbyFEk7g35x9sdCMzLFeZv8l"}, {"n": "Hachiko Para Sempre 2023 1080p", "id": "1q9ktMZODz1RmHPbH6u-cF4RaMaDSVqyu"}, {"n": "Gladiador 2 2024 1080p", "id": "1jOM3it0Pf-bpI6UkOzwTzYUlFWTh1brA"}, {"n": "Ferry 2 2024 1080p", "id": "1eogGw5a4jJxreWnnVTCaHD7wG8gzc16a"}, {"n": "Em Nome da Honra 2022 1080p", "id": "1e8vuXz0kM7fpmMH4wV_eUfLDwiGdDkL-"}, {"n": "Batalhão 6888 2024 1080p", "id": "1FWNIZaIiM6rxNJRBmsDRt4i09Iobp0W2"}, {"n": "Animais Fantásticos Uma História Natural 2022 1080p", "id": "1SxlVhzigEQAtWU18lVEZ7VezhMegEs6i"}, {"n": "Abaixo da Superficie 2022 1080p", "id": "1UzKbjYvvPq-291Sx1cFv_U05PGULOyLu"}, {"n": "Maze Rybber A Cura Mortal 2018 1080p", "id": "13kjcPr_8ZTNPuWBw0qP__rx9MvSjBaWq"}, {"n": "Megatubarão 2018 1080p", "id": "15veH-nJGOKRrF_zKm8zVFC92xGXw1Yjp"}, {"n": "Estrada Sem Lei 2019 1080p", "id": "1HXGi0RWxDgdcgDuV4jJZOx8OqHEq6JvL"}, {"n": "El Camino A Breaking Bad Movie 2019 1080p", "id": "1B1haFbj8egnlLFKP-CMN9qjOblJVUcBp"}, {"n": "Náufrago 2000 1080p", "id": "1qJ2Euwmhw9hCxHqa-U2oGgp8MVJdwjAl"}, {"n": "Duro de Matar 5 2013 1080p", "id": "12CI5M33vIKcpUjB-0Aq9uvBbhEMVnNLM"}, {"n": "Duro de Matar 4 2007 1080p", "id": "12tarfBxTxkoqiwjdu6t12GEKardI3cQm"}, {"n": "Duro de Matar 3 1995 1080p", "id": "1wIYZyCHyNBiHAIU0PhwHdVpvdNZpXp8g"}, {"n": "Duro de Matar 2  1990 1080p", "id": "1hTAm3MwF4-q_gLaNY7OvdClwU_1zo8T4"}, {"n": "As Tartarugas Ninja Fora das Sombras 2016 1080p", "id": "1YOrkc8mGv2YFsx2ntHkl4vboSl5MezZ-"}, {"n": "Indiana Jones 1 Os Caçadores da Arca Perdida 1981 1080p", "id": "18TtsmhrUpdnXVjmxXQTyvZN3ZzmWNYeA"}, {"n": "Imperdoavel 2021 1080p", "id": "1YuAhtTB6nCUCtUJ7N_xSvxOMjx77ac-5"}, {"n": "Indiana Jones 4 O Reino da Caveira de Cristal 2008 1080p", "id": "1zuaywyFuSKsmpweYS7cP2O9KIj_3mSK9"}, {"n": "Indiana Jones 3 A Última Cruzada 1989 1080p", "id": "10JyoTTGZxi6AzPR4EIT0iSCKeiiq-PLT"}, {"n": "Indiana Jones 2 O Templo da Perdição 1984 1080p", "id": "1G74sVEkqkCnqYwaLgw7NZaDpM4eO88lB"}, {"n": "Loucos por Justiça 2021 1080p", "id": "15IJ9gRVZSHhLIIWNB09d4ks0P4H0Wofh"}, {"n": "Jumanji 1995 1080p", "id": "1jLtAGKCybM5DVIQFPW-36345l70TqtJf"}, {"n": "John Wick Um Novo Dia para Matar 2017 1080p", "id": "1-5dcw90niUdKUK-ahTasKuCr-IJ3bD0H"}, {"n": "Herói por Encomenda 2023 1080p", "id": "1y-ReoDOc023WVlEOgmCrc-vQe0zH9Y1F"}, {"n": "Espíritos Obscuros 2021 1080p", "id": "1R3j6tSkAycfuM9pqnFzo-Op9hLViD05h"}, {"n": "Jornada da Vida 2018 1080p", "id": "1Y0WYRcVPj7lEhkTPJRJoGSoQwZHYu_sb"}, {"n": "Hostis 2018 1080p", "id": "1c1yNBS5PbexxfQr30tsHX3CwBHB8sExT"}, {"n": "Bater ou Correr em Londres 2003 1080p", "id": "1gOJe_xjdG4ObPodmwaLnPyNJSEtDV_1q"}, {"n": "O Justiceiro 2004 1080p", "id": "1bgvo8bqcLWts7sl1oVVeijo5uDMzqwOM"}, {"n": "Megatubarão 2 2023 1080p", "id": "1ACdw6l1AN4IHjzUwmb-N7ZjFM8jomWD3"}, {"n": "Inferno 2016 1080p", "id": "1TWvxeSzR5mRYi29SkU9NivuOWJNhiCM3"}, {"n": "Donzela 2024 1080p", "id": "1xAL_u8N9OlSgr36ZXYksGmZvRTSgaeYO"}, {"n": "Luta por Justiça 2020 1080p", "id": "10_t3lTquuDiWk2Hc2XZM0eqOe2j39kb3"}, {"n": "Espada de Deus A Última Cruzada 2020 1080p", "id": "1BuffxVL_B8dF7Ei284xMLtHN10nVp8ve"}, {"n": "Adrenalina 2006 1080p", "id": "1GvCWhtsM3ctM3m2Aqoq9O3FfRgXhwWce"}, {"n": "AXL O Cão Robô 2019 1080p", "id": "1_NJ3T-p6r-P7AWzshWgOFOhuwSnRw7Hu"}, {"n": "O Protetor Capitulo Final 2023 1080p", "id": "12z6gOc4oZnQ534N1uKs4PLs3DubouZFu"}, {"n": "Mundo em Caos 2021 1080p", "id": "1KUcuBj3ddF59L0Jad8rzLw-Y9gm-vvOZ"}, {"n": "Mulher Maravilha 2017 1080p", "id": "1OdYpYOmPB7jC6ijS1Y9qrlQQRdpvSLTJ"}, {"n": "Motoqueiro Fantasma 2007 1080p", "id": "17ACsvZ64DYYHso6Rs5y1qjsisQYUMa31"}, {"n": "Ghosted Sem Resposta 2023 1080p", "id": "101UTLPwvG5Q48MSmDjrIMaNONhuwwaXd"}, {"n": "Farejando Vingança 2023 1080p", "id": "1OI60k8jDKJFn3pdnoEB7dbxZr29TvMFV"}, {"n": "A Noite das Bruxas 2023 1080p", "id": "1-m7RbtXByW1zTm4SGlRfpakpmsD4czEx"}, {"n": "Meu Amigo Enzo 2019 1080p", "id": "1nSfUevTHPzRFsMtIKRnNI6V1U8BJeEii"}, {"n": "Escobar Paraiso Perdido 2015 1080p", "id": "1GMDN3naXiz9KMkoA-P507I2lwL6wMJar"}, {"n": "Midway Batalha em Alto Mar 2019 1080p", "id": "19YDRi4GWzIbmwi2wFaMk8-KLyjHQi7br"}, {"n": "Madagascar 3 Os Procurados 2012 1080p", "id": "1Trutu0RTxseuGMtljCZq70LgA5JN1SEO"}, {"n": "MIB International 2019 1080p", "id": "1sYjhXNjSu1Q4yp9SYFsr-bU_zErthYqK"}, {"n": "Entre Irmãos 2010 1080p", "id": "1lj8Ab8XNkSgJLUXs4C-eHWhdyO5SPJcr"}, {"n": "Mad Max Estrada da Fúria 2015 1080p", "id": "1DbyOPXFjs2kFPTryEOUe9G-J6Cy6mnGr"}, {"n": "Eu Capitão 2023 1080p", "id": "1Cr2SxVm8G44M_yyG5tMJQPIJrDHUFMIn"}, {"n": "Monstros SA 2001 1080p", "id": "1hPNOzzUgYwjs7nOQIw2mzICidr-8PI2Z"}, {"n": "Missão Resgate 2021 1080p", "id": "1tGx_4-FuWRG56ZqkolmdnKvqHPKayAS3"}, {"n": "Minions 2015 1080p", "id": "1kYy_ys2rzUqBBAeFJ1J--HJnXU7m_tQP"}, {"n": "Minions 2 A origem de Gru 2022 1080p", "id": "12u4qNFmLadhBgkMNHFzRI6Vmn0TVmdD7"}, {"n": "Maze Runner Prova de Fogo 2015 1080p", "id": "1Wg5S41a_Hh96nlb_ta2-dZ9PR_oNb4ic"}, {"n": "Maze Runner Correr ou Morrer 2014 1080p", "id": "19_Xe6mm5i2Es5GF5pxGZWdS1gXAK8VEL"}, {"n": "Infiltrados Venezuela 2023 1080p", "id": "17xaV9uZLGGGLIQG2Nmgepxlec4QIiGC9"}, {"n": "Lincoln 2012 1080p", "id": "10cM6XInPBtaaQAa4QUMCRo64S5BzD9ZU"}, {"n": "Invasão a Londres 2016 1080p", "id": "1ZKBob2kj4FQaE7MrIvwjJ920hsSvaLaG"}, {"n": "Invencível Caminho da Redenção 2018 1080p", "id": "1I_6jno8dgkAkJ6zcwAnnugG_F6ODpzi0"}, {"n": "O Mentiroso 1997 1080P", "id": "1fRiYShAkRjVbr4pZ4RHMtmQqrvzLU6zF"}, {"n": "Jumanji Bem Vindo A Selva 2018 1080p", "id": "1TZh3iYhllkI70ieOfftA-MCdpqoEKCuY"}, {"n": "John Carter Entre Dois Mundos 2012 1080p", "id": "1Lu5huP6i_5Xy-upMiBMSP6zSKd0SWreS"}, {"n": "Jason Bourne 2016 1080p", "id": "1n8UDS8vryiza1aShTO4_QxLlj29gAxVs"}, {"n": "Extraordinário 2018 1080p", "id": "166WrJdGHZmJnCu74feQY6faAUVdZmddf"}, {"n": "Missão Impossível 3 2006 1080p", "id": "1svU8epheJkh7_qOCZ55RY04zS1BE408-"}, {"n": "A Venezuela em Solo Brasileiro 2023 1080p", "id": "1qiyqleMDSKUW4kWP2qlHDt2Tve-hd51J"}, {"n": "Guardiões da Galáxia 2014 1080p", "id": "1rX6MtIYoJLaHq0tVD8YqZihjBC9Glp_x"}, {"n": "Kong A Ilha da Caveira 2017 1080p", "id": "1sojn9RvCrfnQbOgLZRRgCFWdYdIWhiet"}, {"n": "Feiticaria 2023 1080p", "id": "1AIDQyWrPnZpP2RrDSgXWkm4ZizC1jki_"}, {"n": "Madagascar 2 A Grande Escapada 2008 1080p", "id": "16xvlP66BIWWd4rzcSFRtAoxthF2Lf_MC"}, {"n": "Círculo de Fogo 2001 1080p", "id": "1VWaPAZ1ZnvfqONJgB-ho7Qcb0kwipjYy"}, {"n": "A Ursa Polar 2022 1080p", "id": "1BknGlzas8fYuU6obCyZtJgoOgO2iQYIp"}, {"n": "Missão Impossível 2 2000 1080p", "id": "1ZJtBybkTq9MoLN65LCkHbxSXOJc2eHXp"}, {"n": "Malévola 2014 1080p", "id": "1H38v3eI8QqdXXGbWKs5uzDkLtHOrPdnR"}, {"n": "Expresso do Amanhã 2015 1080p", "id": "1DqxARhWGKS6ceeGXQl_prplbi9LEQ6i9"}, {"n": "Johnny English 3.0 2019 1080p", "id": "18GbUVCIeUj_g_viETW2s5wk1go6L7XB7"}, {"n": "Clube de Compras Dallas 2014 1080p", "id": "1T3OM7fVJmTC_0I18IsWkotVdQuRJX0iA"}, {"n": "O Bicho Vai Pegar 2016 1080p", "id": "1KWSPVw5AaY8_GZHRXYAurQVJRJN7w5R8"}, {"n": "Jogador N1 2018 1080p", "id": "1CUbZP_SVYh1IH2_c0BtIV-OqM2UAfn-S"}, {"n": "Infinito 2021 1080p", "id": "1IAQUpMXOH0gbeM1VU-tKsmQVnQnbHntk"}, {"n": "Infiltrado 2021 1080p", "id": "1dxykq25wZz9iHyMVGK_SWV9H8vbbTPsV"}, {"n": "Ferrari 2024 1080p", "id": "1A3M9stXmHSzdcD3R4K_midn4-f5zo4P4"}, {"n": "Madagascar 2005 1080p", "id": "1fHHQdO7GyuL310RF07FiuZ1AoVbgfs3P"}, {"n": "Malévola Dona do Mal 2020 1080p", "id": "1E7m05mRGSEhA2XfheatIQBAOc1Pwk-aW"}, {"n": "Creed I Nascido pra Lutar 2016 1080p", "id": "1ZbHwFSY6_9hOuYeiqyv3XazObOyQHLy1"}, {"n": "Jumanji Próxima Fase 2020 1080p", "id": "1jXn-oB1enRlNOBcSC4wj-iaRbryVHBcI"}, {"n": "Jumper 2008 1080p", "id": "1v7qvf05KFP_sFWFf641wk9va9eAOcsiR"}, {"n": "Hércules 1997 1080p", "id": "1xZvOB2Ym1wiRmgC6yNZEJ-xXhuo7oAXp"}, {"n": "Invasão ao Serviço Secreto 2019 1080p", "id": "1NgD1FjVdfR3KwmNk_D9dlVlKz6vRZVAp"}, {"n": "Hancock 2008 1080p", "id": "1QvHNDPzERVahDkJIPYEb2kCTHEzwjBHv"}, {"n": "IT Capitulo Dois 2019 1080p", "id": "1967-UJ3rd6KZ2H3zq0N_eOIzpPGsltUh"}, {"n": "Lendas do Crime 2014 1080p", "id": "1lonTdHlvOL-3GSSc8Wi1z9Mj0n6lZGbD"}, {"n": "Free Guy 2021 1080p", "id": "1zjSkkJK3a5zPF17GH4KRLOiPZxfpPdwk"}, {"n": "Exorcistas do Vaticano 2015 1080p", "id": "1gSKijEJvu-LubHeSKf3yJOGsTFhNuZzv"}, {"n": "Esqueceram de Mim 2 Perdido em Nova York 1992 1080p", "id": "1yiD5rYyoWEeIR6kbF-oOLU0Eu-LhhqvR"}, {"n": "Esqueceram de Mim 1990 1080p", "id": "17fzedajaYiMZU4Gu_M_9nn9bJBvx4o0k"}, {"n": "Chamas da Vingança 2004 1080p", "id": "1wZglxveRyOepmZWyIdgZIGKsWbrOwHTG"}, {"n": "Missão Impossível Nação Secreta 2018 1080p", "id": "1_0OHF0cviMTEJifjQbkPDPpcQMpUVDXt"}, {"n": "Entre Facas e Segredos 2020 1080p", "id": "1G-k3sUQTSQE9QwTtz0llrRLMth2wblDF"}, {"n": "Eike - Tudo ou Nada 2022 1080p", "id": "1KdFQv4_7_4AtRbUrNur0nfy0D2iyr3r9"}, {"n": "O Operário 1080p 2004", "id": "18zBkFu_si_a3pQQPGqkmdhDqnBqwDPtA"}, {"n": "Cão de Briga 2005 1080p", "id": "1rZkTs8Pjo636RZSDoCIy1lHQj6W1Ju43"}, {"n": "Asterix e Obelix O Império do Meio 2023 1080p", "id": "1Icu_9ALlMIWR4cbZOnaCeSATWxUq-gWj"}, {"n": "As Tartarugas Ninja 2014 1080p", "id": "1tWBLV-k0vY2e7FHPVsXanl12YSp7xbyG"}, {"n": "A Última Fronteira do Oeste 2020 1080p", "id": "1geTpve2TZo63eDcW-Zm_RmfQhGJjZp40"}, {"n": "Frankenstein Entre Anjos e Demônios 2014 1080p", "id": "1e1oMsPORvK9qTb8KKdKKRmt3vxQasQ5I"}, {"n": "Escritores da Liberdade 2007 1080p", "id": "1hobJNwB_DzIfPsJ86KGZ_0qXo_BhTVjg"}, {"n": "Escola de Rock 2003 1080p", "id": "16PkJAK-SbK9TcnAzLRaHfWcSkQNhaznU"}, {"n": "Cinquenta Tons de Liberdade 2018 1080p", "id": "1s9YIN-53hjDZPFYZE_8vnUfdxXFSWz1Y"}, {"n": "A Sniper Russa 2015 1080p", "id": "1fYC413VkvYLv3k6iuN8eqIPPdFwRULzQ"}, {"n": "Creed II 2019 1080p", "id": "1modKb9WeFV94aMJ7pnxuj8G5qtoYJeWe"}, {"n": "Django Livre 2013 1080p", "id": "1NQLEpPUH6THo0B9P_wAJmLKZ9euQVKDY"}, {"n": "O Regresso 2016 1080p", "id": "1RcRlkQNeP-vkK6ZnUaZILZ12Jnsrgvhj"}, {"n": "Duas Vidas 2000 1080p", "id": "1yxBHO3KloGFBJZbd4mfdbb_iXygNslpk"}, {"n": "Dunkirk 2017 1080p", "id": "1xuTXOW6K3NAyekwfXWWz8ePRj39FdzQH"}, {"n": "Duelo de Titãs 2000 1080p", "id": "1pRLVksRI6IbmoN--8bCG3lHQXirT7sdB"}, {"n": "Dog A Aventura de uma Vida 2022 1080p", "id": "1RRn-ulRKN922Dscej10jKg8fK33H8ph2"}, {"n": "Curtindo a Vida Adoidado 1986 1080p", "id": "1SOG5ZG4xR1fAp8PPBD-UoTauY12B6yTy"}, {"n": "Creed III 2023 1080", "id": "1R-xtyr0T944dq410KkMQBZjnjLSPUllD"}, {"n": "Coração Valente 1995 1080p", "id": "12euE_pvZWX5-1Hl0R-BVff7wPwb1lDjI"}, {"n": "Cloverfield 2008 1080p", "id": "1m4oWk4tFd0fg_pGldEewJ64mp0o_80Kd"}, {"n": "Cisne Negro 2011 1080p", "id": "1uqKYl4Sjy_ofKsqnlu9cfVzEIwXNIwA4"}, {"n": "Cães de Guerra 2016 1080p", "id": "1o2BRF5bbC1R4-V4xuCKOKWE18-XV5dFU"}, {"n": "Missão Impossível Protocolo Fantasma 2011 1080p", "id": "11rdnipkDFk8P-tvaQpGV6uo1wngP4CLd"}, {"n": "Corrida Mortal 2008 1080p", "id": "1ls_TPMIWTrJEOGC64RT097sJVweem-6U"}, {"n": "Missão Impossível 1996 1080p", "id": "1R0uzEcz6qAFwG8Og7xfkVrCD0-iXp9vY"}, {"n": "De Repente 30 2004 1080p", "id": "1NNR4u3dnWpIlNTy8tATPItLcTiuHrqQV"}, {"n": "Alfa 2018 1080p", "id": "1vDXO7hBCgbmup405ecpi0ON6yaPN1QT0"}, {"n": "Cinquenta Tons de Cinza 2015 1080p", "id": "1LYLZXxLQEZll1qvvUe4m8hIv2rdsuG_i"}, {"n": "Detona Ralph 2013 1080p", "id": "1N6P-ke2zBkVirqqT4zV4O-O2fB2aDb61"}, {"n": "Jack Reacher O Último Tiro 2012 1080p", "id": "1bleSsQsfEabMzZ2pldZ-JFFPx_GbL7Sk"}, {"n": "Eu Sou a Lenda 2008 1080p", "id": "1qDH0oYzTq99X4bPQaeOrDmKqzLZpzrXX"}, {"n": "Drácula A História Nunca Contada 2015 1080p", "id": "1N_gFWF6FAGgs5-VNP6-Z52rh3ykOXEAO"}, {"n": "Desvio de Conduta 2021 1080p", "id": "1VpjpJ-7jYE7PlOZkfYhp3BP25el97kxI"}, {"n": "Crimes em Hollywood 2022 1080p", "id": "1a2teMa1RRRz9ulahf-jJKsE5gjkyPjQ6"}, {"n": "Armageddon 1998 1080p", "id": "1fJPr-vmbj4k4jH7OcjTheMGdPLU6Z_hN"}, {"n": "Agente das Sombras 2022 1080p", "id": "1zHLkphUusGvjovLd2kVjaHmwXSFDt5dY"}, {"n": "Advogado do Diabo 1997 1080p", "id": "1Pl38KRtKX1WkzoMlW0f46hCOqnZfMpde"}, {"n": "A Supremacia Bourne 2004 1080p", "id": "1HQVQMRYF_zvZozGQyXtxfO-tiEuXtqp9"}, {"n": "O Clube dos Milagres 2023 1080p", "id": "1mJg87qDJuV_D2BOtsRdgciXJ_bMgiJoJ"}, {"n": "De Tirar o Fôlego 2023 1080p", "id": "1_EquTAi89Na_v7wtNY4ULH8nUEwiqKKe"}, {"n": "Alexandre O Grande 2004 1080p", "id": "19TAfCdzhBYLqcisaDuqvDf4QJZNHKa3-"}, {"n": "A Teoria de Tudo 2015 1080p", "id": "13TjHVkdK8eVM0aSX9BaMmykFL_YRUKNv"}, {"n": "A Queda 2022 1080p", "id": "1514ocPAgKKWDMBD0rT82RKGE_3fVNFok"}, {"n": "Ad Astra Rumo às Estrelas 2019 1080p", "id": "1N7xnjQfhaHO2caieBLcg-hYEXR78so1O"}, {"n": "Apocalypto 2006 1080p", "id": "1YY52ufhRBICt21DjVVPBAZWxN0BOIyfr"}, {"n": "Chico Para Sempre 2022 1080p", "id": "1_Pjuhd_kR9Ukjux00rkmGZkdM5X9VC4E"}, {"n": "A Senha Swordfish 2001 1080p", "id": "16qUmudDDp9TmG_WBKhDKmHpmhJOjhli_"}, {"n": "O Exorcista do Papa 2023 1080p", "id": "1fGQy5mZH9IF6VQI3mYqrjbdqzt_KbSDl"}, {"n": "Homem de Ferro 3 2013 1080p", "id": "1nu0komIXFcAPKm_eNHJcd80FPZiP61XM"}, {"n": "Homem de Ferro 1 2008 1080p", "id": "1V6uBvuJBLRyv3YdNxzfgKn4PcQu4HhaF"}, {"n": "Homem de Ferro 2 2010 1080p", "id": "1hrlowLm-fi3KF45A95Ed5zfrrhpmUzDF"}, {"n": "Dungeons e Dragons Honra Entre Rebeldes 2023 1080p", "id": "1QlowofX8u5ObuJbzAyBc5ablGsMFxPtU"}, {"n": "Do que as Mulheres Gostam 2000 1080p", "id": "1smtXAzX7USEja3pe5T_9udRaGueOFod-"}, {"n": "As Crônicas de Nárnia Príncipe Caspian 2008 1080p", "id": "1x-zkRfdloRAuh1r2Y4MA8y8xWEv-MPWT"}, {"n": "As Crônicas de Nárnia O Leão, a Feiticeira e o Guarda Roupa 2005 1080p", "id": "1WiQ3LwjTk5VWAIXIgCuJrNEAMYliRrPv"}, {"n": "As Crônicas de Nárnia A Viagem do Peregrino Avorada 2010 1080p", "id": "1xpESc0NXjONLcZFUJtEFF9A5csAc-u2_"}, {"n": "A Outra História Americana 1998 1080p", "id": "1_HdGZxcxJi6JUzDUZ4IENT0CE1ZYVsQV"}, {"n": "A Origem 2010 1080p", "id": "1djccg6M22DWi786RSg5oLP7jFoKH8lB4"}, {"n": "Efeito Borboleta 2004 1080p", "id": "1P_kiPpC646YZfNfzw3bh8DUXU-Klw3d_"}, {"n": "A Paixão De Cristo 2004 1080p", "id": "1Nfx7ijGAPVTDw6b68Ndp2-knXOdMA-V0"}, {"n": "A Morte de Stalin 2018 1080p", "id": "1dWiVI4cW5euxsvyaAqmhqC8CeNTw3kbQ"}, {"n": "A Sutil Arte de Ligar o Foda-se 2023 1080p", "id": "144FVP7s_qps23T8LucgOXWMwshySR4FZ"}, {"n": "A Morte do Demonio 2013 1080p", "id": "16DAs74-Kyxw4rXxzH8x5Zgx-AkQcN9Nf"}, {"n": "O Protetor 2015 1080p", "id": "1lx6ZCB8lN2r2e3u9JU49ZRnIDyeYicGt"}, {"n": "Negociando com o Inimigo 2022 1080p", "id": "1zmDJoFjcdKf3MBcOjLzDdY55hWqj2zne"}, {"n": "Jack Reacher Sem Retorno 2017 1080p", "id": "1982sOMuB8PbYew8rz_05uKi0Y8LlIgzX"}, {"n": "Duna 2021 1080p", "id": "1hSi6oZn3476VclP_FjYX3WqL7JSKvdxx"}, {"n": "De Volta ao Jogo 2014 1080p", "id": "1cX6MnhOyuk8SH5lh0RpzEPkatyMR9TKR"}, {"n": "Corvo Branco 2022 1080p", "id": "19dxs-k2DJA8vR-ITOct68MhAqe2StnS_"}, {"n": "Cidade dos Anjos 1998 1080p", "id": "1caW8Ul29FBC65bs8UtIjkvnXHaXuft0F"}, {"n": "Amigas para Sempre 2019 1080p", "id": "1CWd_Mf1lap1KjEGyasfH_uEMx_dvBn1r"}, {"n": "A Sociedade da Neve 2024 1080p", "id": "1S7izYF1D0w3tle8QUkXpwsWbEXrbknMY"}, {"n": "O Protetor 2 2018 1080p", "id": "1ycOvW1nNl1lMJTryBZtO4yixy5PXSEWj"}, {"n": "Missão Impossível Efeito Falllout 2018 1080p", "id": "1nhaB0sKG6RBSclRk9p7snb7hpnpQ8MOR"}, {"n": "John Wick 3 Parabellum 2019 1080p", "id": "1GPUdfN-lfONEBu4ebjjKZHIkznoQxo-0"}, {"n": "Assassinos da Lua das Flores 2023 1080p", "id": "1drtNe0TBg8EN4ztrnx9UxeZjDqCgB7qa"}, {"n": "Movimento de Jesus 2023 1080p", "id": "1oO-FfOwjd3iyIVIasXA88X0KQ9N6Iaw4"}, {"n": "Destinos a Deriva 2023 1080p", "id": "1TKnUjcT_FbsY6KPDddMwfvfg1dng7ZCI"}, {"n": "BlackBerry 2023 1080p", "id": "1_cSaPDAxMcqmptl_KMHtT63kdL9HQzXs"}, {"n": "Barbie 2023 1080p", "id": "1v30PkAwtF7FUR_I8vC1aQF1uaRXg5DIu"}, {"n": "Era uma Vez um Deadpool 2019 1080p", "id": "1sNOC0rregQgHUVEsMulfEy9fbi9o1lIM"}, {"n": "Caçadores de Emoção Além do Limite 2016 1080p", "id": "1-o7zZcYVeNJXoacqF48BSsqX76LHFZYy"}, {"n": "Nefarious 2023 1080p", "id": "1PtFfDqMZZvFuidnBoiwwA6iz7bPCdMax"}, {"n": "Evereste 2015 1080p", "id": "1oNcx8LMxgdBNBT-TCOJwoHqa9hGVy6ZL"}, {"n": "Cidade Perdida 2022 1080p", "id": "15ip2Hf_KHE8_hQQFHHEndpOmHhEyM7mg"}, {"n": "Argylle O Superespião 2024 1080p", "id": "1PKqL4iaXbVx6cIus62_yzWRZJ7-VuUu4"}, {"n": "Deadpool 2 2018 1080p", "id": "1FNNbSNzJxWfqUm1NLR7ByWqavMTstT9R"}, {"n": "Missão de Sobrevivencia 2024 1080p", "id": "1_kVmsPCvD7Jcgph5raCLEiOh1xiCkEAH"}, {"n": "Matador de Aluguel 2024 1080p", "id": "19f6DrhFtsh3EWwhfmDz6xjuiFLtNfIDB"}, {"n": "Lamborghini O Homem Por Trás da Lenda 2023 1080p", "id": "1Mj4Ff-D14WhTw6V8sZOShZc1NeVU9gBr"}, {"n": "Alerta Máximo 2023 1080p", "id": "1dcho0PIoAYvN5PhxFUuxeMQ0iApdp91u"}, {"n": "Beekeeper Rede de Vingança 2024 1080p", "id": "1oQf7IX46ObHoqGZUDxYzkbjIrnVC6azS"}, {"n": "Indiana Jones e a Relíquia do Destino 2023 1080p", "id": "1htxeoSIvnd8cq1AqNqNJvb8Mp-gNnpCS"}, {"n": "Instinto Materno 2024 1080p", "id": "1vGnLZjTODQLzQ1kWCtB-sEbMMAKTAmAz"}];
 
-// ── EMOJIS POR GÊNERO APROXIMADO ──────────────────────────────────────────────
-function emoji(titulo) {
-  const t = titulo.toLowerCase();
-  if (/vingadores|homem|spider|batman|capitão|thor|hulk|superman|herói|super/.test(t)) return '🦸';
-  if (/terror|pânico|medo|horror|bruxa|sombra|ritual|marrowbone/.test(t)) return '👻';
-  if (/guerra|batalha|combate|soldado|militar|predador|rambo/.test(t)) return '⚔️';
-  if (/nemo|dory|rango|leão|floresta|macacos|patrulha|domésticos/.test(t)) return '🐾';
-  if (/parasita|silêncio|psicopata|assassin|crime|roubo|sequestro/.test(t)) return '🔪';
-  if (/bourne|caçador|perseguição|agentes|imparável|vingança/.test(t)) return '🎯';
-  if (/ficção|prometheus|planeta|alien|sci/.test(t)) return '🚀';
-  if (/pulp|priscilla|simpsons|racionais/.test(t)) return '🎭';
-  if (/amor|vida|liberdade|palmer|por toda/.test(t)) return '❤️';
-  return '🎬';
+function extractYear(t){const m=t.match(/\b(19|20)\d{2}\b/);return m?m[0]:""}
+function extractQual(t){const m=t.match(/\b(4K|2160p|1080p|720p)\b/i);return m?m[0].toUpperCase():"1080P"}
+function cleanTitle(t){return t.replace(/\b(4K|2160p|1080p|720p)\b/gi,"").replace(/\b(19|20)\d{2}\b/,"").replace(/\(\d+\)/,"").replace(/\s+/g," ").trim()}
+
+let filmes = RAW.map(r=>({
+  id:r.id, nome:r.n,
+  titulo:cleanTitle(r.n),
+  ano:extractYear(r.n),
+  qual:extractQual(r.n),
+  capa:null, sinopse:null, nota:null, generos:[], tmdb_id:null
+}));
+
+let genreActive="all";
+let genreSet=new Set();
+let tmdbLoaded=false;
+
+// ─── TMDB ───
+async function loadAll(){
+  const key=document.getElementById("tmdbKey").value.trim();
+  if(!key){alert("Informe a chave TMDB!");return}
+  document.getElementById("btnLoad").disabled=true;
+  const total=filmes.length;
+  const pBar=document.getElementById("pBar");
+  const pStatus=document.getElementById("pStatus");
+  
+  // Pega mapa de gêneros
+  try{
+    const gr=await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${key}&language=pt-BR`);
+    const gd=await gr.json();
+    window._gmap={};
+    (gd.genres||[]).forEach(g=>window._gmap[g.id]=g.name);
+  }catch(e){}
+
+  for(let i=0;i<total;i++){
+    const f=filmes[i];
+    pStatus.textContent=`${i+1}/${total} — ${f.titulo.substring(0,30)}`;
+    pBar.style.width=((i/total)*100)+"%";
+    
+    try{
+      const url=`https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${encodeURIComponent(f.titulo)}&language=pt-BR${f.ano?"&year="+f.ano:""}`;
+      const r=await fetch(url);
+      const d=await r.json();
+      if(d.results&&d.results.length>0){
+        const m=d.results[0];
+        filmes[i].capa=m.poster_path?`https://image.tmdb.org/t/p/w342${m.poster_path}`:null;
+        filmes[i].sinopse=m.overview||null;
+        filmes[i].nota=m.vote_average?+m.vote_average.toFixed(1):null;
+        filmes[i].tmdb_id=m.id;
+        if(m.genre_ids&&window._gmap){
+          filmes[i].generos=m.genre_ids.map(id=>window._gmap[id]).filter(Boolean);
+          filmes[i].generos.forEach(g=>genreSet.add(g));
+        }
+        // Atualiza card inline
+        updateCard(i);
+      }
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,220));
+  }
+  
+  pBar.style.width="100%";
+  pStatus.textContent=`✅ ${total} filmes carregados!`;
+  document.getElementById("btnLoad").disabled=false;
+  tmdbLoaded=true;
+  buildGenreFilters();
+  applyFilters();
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
-const grade = document.getElementById('grade');
-const contador = document.getElementById('contador');
+function updateCard(i){
+  const el=document.getElementById("card_"+i);
+  if(!el)return;
+  const f=filmes[i];
+  const posterEl=el.querySelector(".poster");
+  if(f.capa){
+    posterEl.innerHTML=`<img src="${f.capa}" alt="" loading="lazy" onload="this.classList.add('loaded')"/>
+    <div class="qual-badge">${f.qual}</div>
+    ${f.nota?`<div class="nota-badge">⭐ ${f.nota}</div>`:""}`;
+  }
+}
 
-function renderizar(lista) {
-  grade.innerHTML = '';
-  contador.textContent = `${lista.length} filme${lista.length !== 1 ? 's' : ''}`;
-  lista.forEach((f, i) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.tabIndex = 0;
-    card.innerHTML = `
-      <div class="card-thumb">${emoji(f.titulo)}</div>
-      <div class="card-info">
-        <div class="card-titulo">${f.titulo}</div>
-        <div class="card-ano">${f.ano}</div>
+// ─── RENDER ───
+function renderGrid(lista){
+  const grid=document.getElementById("grid");
+  document.getElementById("badgeCount").textContent=lista.length+" filmes";
+  grid.innerHTML="";
+  
+  if(!lista.length){
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🎬</div><h3>Nenhum resultado</h3></div>`;
+    return;
+  }
+  
+  const frag=document.createDocumentFragment();
+  lista.forEach(f=>{
+    const i=filmes.indexOf(f);
+    const card=document.createElement("div");
+    card.className="card";
+    card.tabIndex=0;
+    card.id="card_"+i;
+    card.setAttribute("aria-label","Assistir "+f.titulo);
+    
+    const posterHTML=f.capa
+      ?`<img src="${f.capa}" alt="" loading="lazy" onload="this.classList.add('loaded')"/>
+         <div class="qual-badge">${f.qual}</div>
+         ${f.nota?`<div class="nota-badge">⭐ ${f.nota}</div>`:""}`
+      :`<div class="poster-placeholder">
+          <div class="poster-placeholder-icon">🎬</div>
+          <div class="poster-placeholder-title">${f.titulo}</div>
+        </div>
+        <div class="qual-badge">${f.qual}</div>`;
+    
+    card.innerHTML=`
+      <div class="poster">${posterHTML}</div>
+      <div class="card-footer">
+        <span class="card-title">${f.titulo}</span>
+        <div class="play-btn">▶</div>
       </div>`;
-    card.onclick = () => abrirPlayer(f);
-    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') abrirPlayer(f); };
-    grade.appendChild(card);
+    
+    card.onclick=()=>openPlayer(f);
+    card.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openPlayer(f)}};
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+}
+
+// ─── FILTERS ───
+function buildGenreFilters(){
+  const bar=document.getElementById("filtersBar");
+  bar.innerHTML=`<button class="fbtn ${genreActive==="all"?"on":""}" onclick="setGenre('all',this)">Todos</button>`;
+  [...genreSet].sort().forEach(g=>{
+    const b=document.createElement("button");
+    b.className="fbtn"+(genreActive===g?" on":"");
+    b.textContent=g;
+    b.onclick=function(){setGenre(g,this)};
+    bar.appendChild(b);
   });
 }
 
-function filtrar() {
-  const q = document.getElementById('busca').value.toLowerCase().trim();
-  const resultado = q ? filmes.filter(f => f.titulo.toLowerCase().includes(q) || f.ano.includes(q)) : filmes;
-  renderizar(resultado);
+function setGenre(g,el){
+  genreActive=g;
+  document.querySelectorAll(".fbtn").forEach(b=>b.classList.remove("on"));
+  el.classList.add("on");
+  applyFilters();
 }
 
-// ── PLAYER ────────────────────────────────────────────────────────────────────
-function abrirPlayer(f) {
-  document.getElementById('player-title').textContent = `${f.titulo} (${f.ano})`;
-  document.getElementById('player-frame').src = f.player;
-  document.getElementById('player-overlay').classList.add('ativo');
+function applyFilters(){
+  const q=document.getElementById("srch").value.toLowerCase();
+  const filtered=filmes.filter(f=>{
+    const matchG=genreActive==="all"||f.generos.includes(genreActive);
+    const matchS=!q||f.titulo.toLowerCase().includes(q)||f.nome.toLowerCase().includes(q);
+    return matchG&&matchS;
+  });
+  renderGrid(filtered);
 }
 
-function fecharPlayer() {
-  document.getElementById('player-frame').src = '';
-  document.getElementById('player-overlay').classList.remove('ativo');
+// ─── PLAYER ───
+let lastFocus=null;
+function openPlayer(f){
+  lastFocus=document.activeElement;
+  document.getElementById("pTitle").textContent=f.titulo;
+  document.getElementById("pMeta").textContent=[f.ano,f.qual,f.nota?"⭐ "+f.nota:null].filter(Boolean).join(" · ");
+  const tw=document.getElementById("thumbWrap");
+  tw.innerHTML=f.capa
+    ?`<img src="${f.capa}" class="player-thumb" alt=""/>`
+    :`<div class="player-thumb-ph">🎬</div>`;
+  document.getElementById("pFrame").src=`https://drive.google.com/file/d/${f.id}/preview`;
+  document.getElementById("fallbackLink").href=`https://drive.google.com/file/d/${f.id}/view`;
+  document.getElementById("pFrame").style.display="block";
+  document.getElementById("fallback").classList.remove("on");
+  document.getElementById("playerOv").classList.add("on");
+  setTimeout(()=>document.getElementById("pClose").focus(),100);
 }
+function closePlayer(){
+  document.getElementById("playerOv").classList.remove("on");
+  document.getElementById("pFrame").src="";
+  if(lastFocus)lastFocus.focus();
+}
+document.getElementById("pClose").onclick=closePlayer;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePlayer()});
 
-// fechar com ESC (TVs com controle)
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') fecharPlayer();
-  if (e.key === 'Backspace' && document.getElementById('player-overlay').classList.contains('ativo')) fecharPlayer();
-});
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-renderizar(filmes);
+// ─── INIT ───
+renderGrid(filmes);
 </script>
 </body>
 </html>
